@@ -47,6 +47,7 @@ export const PROVIDER_FALLBACK_ORDER = [
   "openai",
   "anthropic",
   "google-genai",
+  "ollama",
 ] as const;
 export type Provider = (typeof PROVIDER_FALLBACK_ORDER)[number];
 
@@ -82,6 +83,8 @@ const providerToApiKey = (
       return apiKeys.anthropicApiKey;
     case "google-genai":
       return apiKeys.googleApiKey;
+    case "ollama":
+      return "";
     default:
       throw new Error(`Unknown provider: ${providerName}`);
   }
@@ -182,6 +185,12 @@ export class ModelManager {
       modelProvider: provider,
       max_retries: MAX_RETRIES,
       ...(apiKey ? { apiKey } : {}),
+      ...(provider === "ollama"
+        ? {
+            baseUrl: process.env.OLLAMA_BASE_URL,
+            model: process.env.OLLAMA_MODEL,
+          }
+        : {}),
       ...(thinkingModel && provider === "anthropic"
         ? {
             thinking: { budget_tokens: thinkingBudgetTokens, type: "enabled" },
@@ -398,6 +407,13 @@ export class ModelManager {
         [LLMTask.REVIEWER]: "gpt-5",
         [LLMTask.ROUTER]: "gpt-5-nano",
         [LLMTask.SUMMARIZER]: "gpt-5-mini",
+      },
+      ollama: {
+        [LLMTask.PLANNER]: process.env.OLLAMA_MODEL || "llama3",
+        [LLMTask.PROGRAMMER]: process.env.OLLAMA_MODEL || "llama3",
+        [LLMTask.REVIEWER]: process.env.OLLAMA_MODEL || "llama3",
+        [LLMTask.ROUTER]: process.env.OLLAMA_MODEL || "llama3",
+        [LLMTask.SUMMARIZER]: process.env.OLLAMA_MODEL || "llama3",
       },
     };
 
