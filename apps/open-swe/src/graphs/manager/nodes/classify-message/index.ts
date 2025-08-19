@@ -11,6 +11,7 @@ import {
   RemoveMessage,
 } from "@langchain/core/messages";
 import { z } from "zod";
+import { ChatOllama } from "@langchain/ollama";
 import {
   loadModel,
   supportsParallelToolCallsParam,
@@ -112,27 +113,63 @@ export async function classifyMessage(
     config,
     LLMTask.ROUTER,
   );
-  const modelWithTools = model.bindTools([respondAndRouteTool], {
-    tool_choice: respondAndRouteTool.name,
-    ...(modelSupportsParallelToolCallsParam
-      ? {
-          parallel_tool_calls: false,
-        }
-      : {}),
-  });
+  let response;
+  if (model instanceof ChatOllama) {
+    // Ollama doesn't support the bindTools method in the same way.
+    // We need to manually construct the prompt and parse the JSON output.
+    const ollamaToolPrompt = `${prompt}
 
-  const response = await modelWithTools.invoke([
-    {
-      role: "system",
-      content: prompt,
-    },
-    {
-      role: "user",
-      content: extractContentWithoutDetailsFromIssueBody(
-        getMessageContentString(userMessage.content),
-      ),
-    },
-  ]);
+You must use the "respond_and_route" tool. Respond with a single JSON object that is a valid argument for this tool.`;
+
+    const ollamaResponse = await model.invoke([
+      {
+        role: "system",
+        content: ollamaToolPrompt,
+      },
+      {
+        role: "user",
+        content: extractContentWithoutDetailsFromIssueBody(
+          getMessageContentString(userMessage.content),
+        ),
+      },
+    ]);
+
+    // Manually construct the response object to mimic the tool-calling format.
+    const responseContent = getMessageContentString(ollamaResponse.content);
+    const toolCallArgs = JSON.parse(responseContent);
+    response = {
+      tool_calls: [
+        {
+          name: "respond_and_route",
+          args: toolCallArgs,
+          id: `tool_call_${Date.now()}`,
+        },
+      ],
+      content: "",
+    };
+  } else {
+    const modelWithTools = model.bindTools([respondAndRouteTool], {
+      tool_choice: respondAndRouteTool.name,
+      ...(modelSupportsParallelToolCallsParam
+        ? {
+            parallel_tool_calls: false,
+          }
+        : {}),
+    });
+
+    response = await modelWithTools.invoke([
+      {
+        role: "system",
+        content: prompt,
+      },
+      {
+        role: "user",
+        content: extractContentWithoutDetailsFromIssueBody(
+          getMessageContentString(userMessage.content),
+        ),
+      },
+    ]);
+  }
 
   const toolCall = response.tool_calls?.[0];
   if (!toolCall) {
