@@ -11,7 +11,6 @@ import {
   RemoveMessage,
 } from "@langchain/core/messages";
 import { z } from "zod";
-import { ChatOllama } from "@langchain/ollama";
 import {
   loadModel,
   supportsParallelToolCallsParam,
@@ -108,13 +107,10 @@ export async function classifyMessage(
     description: "Respond to the user's message and determine how to route it.",
     schema,
   };
-  const model = await loadModel(config, LLMTask.ROUTER);
-  const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
-    config,
-    LLMTask.ROUTER,
-  );
+  const { model, provider } = await loadModel(config, LLMTask.ROUTER);
+
   let response;
-  if (model instanceof ChatOllama) {
+  if (provider === "ollama") {
     // Ollama doesn't support the bindTools method in the same way.
     // We need to manually construct the prompt and parse the JSON output.
     const ollamaToolPrompt = `${prompt}
@@ -135,8 +131,12 @@ You must use the "respond_and_route" tool. Respond with a single JSON object tha
     ]);
 
     // Manually construct the response object to mimic the tool-calling format.
+    // Extract JSON from markdown code blocks if present.
     const responseContent = getMessageContentString(ollamaResponse.content);
-    const toolCallArgs = JSON.parse(responseContent);
+    const jsonMatch = responseContent.match(/```(json)?\n(.*)\n```/s);
+    const jsonString = jsonMatch ? jsonMatch[2] : responseContent;
+    const toolCallArgs = JSON.parse(jsonString);
+
     response = {
       tool_calls: [
         {
@@ -146,8 +146,13 @@ You must use the "respond_and_route" tool. Respond with a single JSON object tha
         },
       ],
       content: "",
+      additional_kwargs: {},
     };
   } else {
+    const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
+      config,
+      LLMTask.ROUTER,
+    );
     const modelWithTools = model.bindTools([respondAndRouteTool], {
       tool_choice: respondAndRouteTool.name,
       ...(modelSupportsParallelToolCallsParam
