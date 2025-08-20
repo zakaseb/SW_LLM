@@ -2,7 +2,7 @@
   "extends": "@tsconfig/recommended",
   "compilerOptions": {
     "target": "ES2021",
-    "lib": ["ES2023"],
+    "lib": ["ESNext"],
     "module": "NodeNext",
     "moduleResolution": "nodenext",
     "esModuleInterop": true,
