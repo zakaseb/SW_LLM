@@ -109,6 +109,10 @@ export async function classifyMessage(
   };
   const { model, provider } = await loadModel(config, LLMTask.ROUTER);
 
+  if (!model) {
+    throw new Error(`Model could not be loaded for provider ${provider}`);
+  }
+
   let response;
   if (provider === "ollama") {
     // Ollama doesn't support the bindTools method in the same way.
