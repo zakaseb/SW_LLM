@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo dev",
+    "dev": "turbo dev --filter=!@open-swe/docs",
     "build": "turbo build",
     "turbo:command": "turbo",
     "format": "turbo format",

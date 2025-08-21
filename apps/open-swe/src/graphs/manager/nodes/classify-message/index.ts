@@ -5,7 +5,6 @@ import {
 } from "@open-swe/shared/open-swe/manager/types";
 import { createLangGraphClient } from "../../../../utils/langgraph-client.js";
 import {
-  AIMessage,
   BaseMessage,
   HumanMessage,
   isHumanMessage,
@@ -142,8 +141,7 @@ You must use the "respond_and_route" tool. Respond with a single JSON object tha
     const jsonString = jsonMatch ? jsonMatch[2] : responseContent;
     const toolCallArgs = JSON.parse(jsonString);
 
-    response = new AIMessage({
-      content: "",
+    response = {
       tool_calls: [
         {
           name: "respond_and_route",
@@ -151,7 +149,9 @@ You must use the "respond_and_route" tool. Respond with a single JSON object tha
           id: `tool_call_${Date.now()}`,
         },
       ],
-    });
+      content: "",
+      additional_kwargs: {},
+    };
   } else {
     const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
       config,

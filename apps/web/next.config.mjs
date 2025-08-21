@@ -5,6 +5,11 @@ const nextConfig = {
       bodySizeLimit: "10mb",
     },
   },
+  transpilePackages: [
+    "universal-github-app-jwt",
+    "@octokit/auth-app",
+    "@octokit/core",
+  ],
 };
 
 export default nextConfig;

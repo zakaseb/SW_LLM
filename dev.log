@@ -1,0 +1,8 @@
+turbo 2.5.5
+
+• Packages in scope: @open-swe/agent, @open-swe/cli, @open-swe/shared, @open-swe/web
+• Running dev in 4 packages
+• Remote caching disabled
+@open-swe/cli:dev: cache miss, executing 9be32b05a171a56e
+@open-swe/web:dev: cache miss, executing 76eba521ea92f60d
+@open-swe/agent:dev: cache miss, executing dcbaf7706002280a

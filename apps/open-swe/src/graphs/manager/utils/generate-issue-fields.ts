@@ -11,7 +11,7 @@ import { getMessageString } from "../../../utils/message/content.js";
 export async function createIssueFieldsFromMessages(
   messages: BaseMessage[],
   configurable: GraphConfig["configurable"],
-): Promise<{ title:string; body: string }> {
+): Promise<{ title: string; body: string }> {
   const { model } = await loadModel({ configurable }, LLMTask.ROUTER);
   const githubIssueTool = {
     name: "create_github_issue",
