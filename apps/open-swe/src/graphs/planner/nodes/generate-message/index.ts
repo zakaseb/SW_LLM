@@ -86,7 +86,7 @@ export async function generateAction(
   state: PlannerGraphState,
   config: GraphConfig,
 ): Promise<PlannerGraphUpdate> {
-  const model = await loadModel(config, LLMTask.PLANNER);
+  const { model } = await loadModel(config, LLMTask.PLANNER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(config, LLMTask.PLANNER);
   const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(

@@ -149,7 +149,7 @@ export async function summarizeHistory(
   state: GraphState,
   config: GraphConfig,
 ): Promise<GraphUpdate> {
-  const model = await loadModel(config, LLMTask.SUMMARIZER);
+  const { model } = await loadModel(config, LLMTask.SUMMARIZER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(
     config,

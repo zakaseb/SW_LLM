@@ -255,11 +255,13 @@ async function createToolsAndPrompt(
       anthropic: anthropicModelTools,
       openai: nonAnthropicModelTools,
       "google-genai": nonAnthropicModelTools,
+      ollama: nonAnthropicModelTools,
     },
     providerMessages: {
       anthropic: anthropicMessages,
       openai: nonAnthropicMessages,
       "google-genai": nonAnthropicMessages,
+      ollama: nonAnthropicMessages,
     },
   };
 }
@@ -294,10 +296,7 @@ export async function generateAction(
     },
   );
 
-  const model = await loadModel(config, LLMTask.PROGRAMMER, {
-    providerTools: providerTools,
-    providerMessages: providerMessages,
-  });
+  const { model } = await loadModel(config, LLMTask.PROGRAMMER);
 
   const modelWithTools = model.bindTools(
     isAnthropicModel ? providerTools.anthropic : providerTools.openai,

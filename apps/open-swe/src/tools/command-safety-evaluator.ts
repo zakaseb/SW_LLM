@@ -31,7 +31,7 @@ export function createCommandSafetyEvaluator(config: GraphConfig) {
       try {
         const { command, tool_name, args } = CommandSafetySchema.parse(input);
 
-        const model = await loadModel(config, LLMTask.ROUTER);
+        const { model } = await loadModel(config, LLMTask.ROUTER);
 
         // Create a tool for structured safety evaluation
         const safetyEvaluationTool = {

@@ -122,7 +122,7 @@ export async function finalReview(
   const completedTool = createCodeReviewMarkTaskCompletedFields();
   const incompleteTool = createCodeReviewMarkTaskNotCompleteFields();
   const tools = [completedTool, incompleteTool];
-  const model = await loadModel(config, LLMTask.REVIEWER);
+  const { model } = await loadModel(config, LLMTask.REVIEWER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(config, LLMTask.REVIEWER);
   const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(

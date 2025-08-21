@@ -117,7 +117,7 @@ export async function determineNeedsContext(
   state: PlannerGraphState,
   config: GraphConfig,
 ): Promise<Command> {
-  const [missingMessages, model] = await Promise.all([
+  const [missingMessages, { model }] = await Promise.all([
     getMissingMessages(state, config),
     loadModel(config, LLMTask.ROUTER),
   ]);

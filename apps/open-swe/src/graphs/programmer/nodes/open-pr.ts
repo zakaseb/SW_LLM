@@ -138,7 +138,7 @@ export async function openPullRequest(
 
   const openPrTool = createOpenPrToolFields();
   // use the router model since this is a simple task that doesn't need an advanced model
-  const model = await loadModel(config, LLMTask.ROUTER);
+  const { model } = await loadModel(config, LLMTask.ROUTER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(config, LLMTask.ROUTER);
   const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(

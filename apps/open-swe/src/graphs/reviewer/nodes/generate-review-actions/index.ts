@@ -175,11 +175,13 @@ function createToolsAndPrompt(
       anthropic: anthropicTools,
       openai: nonAnthropicTools,
       "google-genai": nonAnthropicTools,
+      ollama: nonAnthropicTools,
     },
     providerMessages: {
       anthropic: anthropicMessages,
       openai: nonAnthropicMessages,
       "google-genai": nonAnthropicMessages,
+      ollama: nonAnthropicMessages,
     },
   };
 }
@@ -201,10 +203,7 @@ export async function generateReviewActions(
     config,
   );
 
-  const model = await loadModel(config, LLMTask.REVIEWER, {
-    providerTools,
-    providerMessages,
-  });
+  const { model } = await loadModel(config, LLMTask.REVIEWER);
   const modelWithTools = model.bindTools(
     isAnthropicModel ? providerTools.anthropic : providerTools.openai,
     {

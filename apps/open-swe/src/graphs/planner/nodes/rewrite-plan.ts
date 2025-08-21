@@ -18,7 +18,7 @@ import {
   supportsParallelToolCallsParam,
 } from "../../../utils/llms/index.js";
 import { LLMTask } from "@open-swe/shared/open-swe/llm-task";
-import { FallbackRunnable } from "../../../utils/runtime-fallback.js";
+import { ConfigurableModel } from "langchain/chat_models/universal";
 
 const systemPromptIdentifyChanges = `You are operating as an agentic coding assistant built by LangChain. You've previously been given a task to generate a plan of action for, to address the user's initial request.
 
@@ -97,7 +97,7 @@ const formatSysPromptRewritePlan = (
 
 async function identifyTasksToModifyFunc(
   state: PlannerGraphState,
-  model: FallbackRunnable,
+  model: ConfigurableModel,
   supportsParallelToolCallsParam: boolean,
 ): Promise<PlanItem[]> {
   if (!state.planChangeRequest) {
@@ -188,7 +188,7 @@ const identifyTasksToModify = traceable(identifyTasksToModifyFunc, {
 async function updatePlanTasksFunc(
   state: PlannerGraphState,
   tasksToModify: PlanItem[],
-  model: FallbackRunnable,
+  model: ConfigurableModel,
   supportsParallelToolCallsParam: boolean,
 ): Promise<string[]> {
   if (!state.planChangeRequest) {
@@ -265,7 +265,7 @@ export async function rewritePlan(
     throw new Error("No plan change request found.");
   }
 
-  const model = await loadModel(config, LLMTask.PLANNER);
+  const { model } = await loadModel(config, LLMTask.PLANNER);
   const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
     config,
     LLMTask.PLANNER,

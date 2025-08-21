@@ -148,7 +148,7 @@ export async function updatePlan(
     ...updatePlanToolCall,
   });
 
-  const model = await loadModel(config, LLMTask.PROGRAMMER);
+  const { model } = await loadModel(config, LLMTask.PROGRAMMER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(
     config,

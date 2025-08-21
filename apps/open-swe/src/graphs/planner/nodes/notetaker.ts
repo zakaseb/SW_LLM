@@ -102,7 +102,7 @@ export async function notetaker(
   state: PlannerGraphState,
   config: GraphConfig,
 ): Promise<PlannerGraphUpdate> {
-  const model = await loadModel(config, LLMTask.SUMMARIZER);
+  const { model } = await loadModel(config, LLMTask.SUMMARIZER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(
     config,

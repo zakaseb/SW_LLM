@@ -108,7 +108,7 @@ export async function diagnoseError(
 
   logger.info("The last two tool calls resulted in errors. Diagnosing error.");
 
-  const model = await loadModel(config, LLMTask.SUMMARIZER);
+  const { model } = await loadModel(config, LLMTask.SUMMARIZER);
   const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
     config,
     LLMTask.SUMMARIZER,
