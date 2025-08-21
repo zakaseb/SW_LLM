@@ -122,21 +122,26 @@ export async function finalReview(
   const completedTool = createCodeReviewMarkTaskCompletedFields();
   const incompleteTool = createCodeReviewMarkTaskNotCompleteFields();
   const tools = [completedTool, incompleteTool];
-  const { model } = await loadModel(config, LLMTask.REVIEWER);
+  const { model, provider } = await loadModel(config, LLMTask.REVIEWER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(config, LLMTask.REVIEWER);
   const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
     config,
     LLMTask.REVIEWER,
   );
-  const modelWithTools = model.bindTools(tools, {
-    tool_choice: "any",
-    ...(modelSupportsParallelToolCallsParam
-      ? {
-          parallel_tool_calls: false,
-        }
-      : {}),
-  });
+  const modelWithTools = model.bindTools(
+    tools,
+    provider === "ollama"
+      ? {}
+      : {
+          tool_choice: "any",
+          ...(modelSupportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: false,
+              }
+            : {}),
+        },
+  );
 
   const response = await modelWithTools.invoke([
     {

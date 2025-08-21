@@ -201,17 +201,19 @@ export async function generateReviewActions(
     config,
   );
 
-  const { model } = await loadModel(config, LLMTask.REVIEWER);
+  const { model, provider } = await loadModel(config, LLMTask.REVIEWER);
   const modelWithTools = model.bindTools(
     isAnthropicModel ? providerTools.anthropic : providerTools.openai,
-    {
-      tool_choice: "auto",
-      ...(modelSupportsParallelToolCallsParam
-        ? {
-            parallel_tool_calls: true,
-          }
-        : {}),
-    },
+    provider === "ollama"
+      ? {}
+      : {
+          tool_choice: "auto",
+          ...(modelSupportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: true,
+              }
+            : {}),
+        },
   );
 
   const response = await modelWithTools.invoke(

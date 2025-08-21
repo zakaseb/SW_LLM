@@ -31,7 +31,7 @@ export function createCommandSafetyEvaluator(config: GraphConfig) {
       try {
         const { command, tool_name, args } = CommandSafetySchema.parse(input);
 
-        const { model } = await loadModel(config, LLMTask.ROUTER);
+        const { model, provider } = await loadModel(config, LLMTask.ROUTER);
 
         // Create a tool for structured safety evaluation
         const safetyEvaluationTool = {
@@ -40,9 +40,14 @@ export function createCommandSafetyEvaluator(config: GraphConfig) {
           schema: SafetyEvaluationSchema,
         };
 
-        const modelWithTools = model.bindTools([safetyEvaluationTool], {
-          tool_choice: safetyEvaluationTool.name,
-        });
+        const modelWithTools = model.bindTools(
+          [safetyEvaluationTool],
+          provider === "ollama"
+            ? {}
+            : {
+                tool_choice: safetyEvaluationTool.name,
+              },
+        );
 
         const prompt = `You are a security expert evaluating whether a command is safe to run on a local development machine.
 

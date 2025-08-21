@@ -102,7 +102,7 @@ export async function notetaker(
   state: PlannerGraphState,
   config: GraphConfig,
 ): Promise<PlannerGraphUpdate> {
-  const { model } = await loadModel(config, LLMTask.SUMMARIZER);
+  const { model, provider } = await loadModel(config, LLMTask.SUMMARIZER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(
     config,
@@ -112,14 +112,19 @@ export async function notetaker(
     config,
     LLMTask.SUMMARIZER,
   );
-  const modelWithTools = model.bindTools([condenseContextTool], {
-    tool_choice: condenseContextTool.name,
-    ...(modelSupportsParallelToolCallsParam
-      ? {
-          parallel_tool_calls: false,
-        }
-      : {}),
-  });
+  const modelWithTools = model.bindTools(
+    [condenseContextTool],
+    provider === "ollama"
+      ? {}
+      : {
+          tool_choice: condenseContextTool.name,
+          ...(modelSupportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: false,
+              }
+            : {}),
+        },
+  );
 
   const conversationHistoryStr = `Here is the full conversation history:
 

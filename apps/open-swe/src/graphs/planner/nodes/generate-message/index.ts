@@ -86,7 +86,7 @@ export async function generateAction(
   state: PlannerGraphState,
   config: GraphConfig,
 ): Promise<PlannerGraphUpdate> {
-  const { model } = await loadModel(config, LLMTask.PLANNER);
+  const { model, provider } = await loadModel(config, LLMTask.PLANNER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(config, LLMTask.PLANNER);
   const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
@@ -115,14 +115,19 @@ export async function generateAction(
     cache_control: { type: "ephemeral" },
   } as any;
 
-  const modelWithTools = model.bindTools(tools, {
-    tool_choice: "auto",
-    ...(modelSupportsParallelToolCallsParam
-      ? {
-          parallel_tool_calls: true,
-        }
-      : {}),
-  });
+  const modelWithTools = model.bindTools(
+    tools,
+    provider === "ollama"
+      ? {}
+      : {
+          tool_choice: "auto",
+          ...(modelSupportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: true,
+              }
+            : {}),
+        },
+  );
 
   const [missingMessages, { taskPlan: latestTaskPlan }] = await Promise.all([
     getMissingMessages(state, config),

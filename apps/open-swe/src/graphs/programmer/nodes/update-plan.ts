@@ -148,7 +148,7 @@ export async function updatePlan(
     ...updatePlanToolCall,
   });
 
-  const { model } = await loadModel(config, LLMTask.PROGRAMMER);
+  const { model, provider } = await loadModel(config, LLMTask.PROGRAMMER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(
     config,
@@ -158,14 +158,19 @@ export async function updatePlan(
     config,
     LLMTask.PROGRAMMER,
   );
-  const modelWithTools = model.bindTools([updatePlanTool], {
-    tool_choice: updatePlanTool.name,
-    ...(modelSupportsParallelToolCallsParam
-      ? {
-          parallel_tool_calls: false,
-        }
-      : {}),
-  });
+  const modelWithTools = model.bindTools(
+    [updatePlanTool],
+    provider === "ollama"
+      ? {}
+      : {
+          tool_choice: updatePlanTool.name,
+          ...(modelSupportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: false,
+              }
+            : {}),
+        },
+  );
 
   const activeTask = getActiveTask(state.taskPlan);
   const request = activeTask.request;

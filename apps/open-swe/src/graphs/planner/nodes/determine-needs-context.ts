@@ -117,7 +117,7 @@ export async function determineNeedsContext(
   state: PlannerGraphState,
   config: GraphConfig,
 ): Promise<Command> {
-  const [missingMessages, { model }] = await Promise.all([
+  const [missingMessages, { model, provider }] = await Promise.all([
     getMissingMessages(state, config),
     loadModel(config, LLMTask.ROUTER),
   ]);
@@ -132,14 +132,19 @@ export async function determineNeedsContext(
     config,
     LLMTask.ROUTER,
   );
-  const modelWithTools = model.bindTools([determineContextTool], {
-    tool_choice: determineContextTool.name,
-    ...(modelSupportsParallelToolCallsParam
-      ? {
-          parallel_tool_calls: false,
-        }
-      : {}),
-  });
+  const modelWithTools = model.bindTools(
+    [determineContextTool],
+    provider === "ollama"
+      ? {}
+      : {
+          tool_choice: determineContextTool.name,
+          ...(modelSupportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: false,
+              }
+            : {}),
+        },
+  );
 
   const response = await modelWithTools.invoke([
     {

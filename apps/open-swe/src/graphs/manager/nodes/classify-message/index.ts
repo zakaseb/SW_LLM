@@ -137,9 +137,27 @@ You must use the "respond_and_route" tool. Respond with a single JSON object tha
     // Manually construct the response object to mimic the tool-calling format.
     // Extract JSON from markdown code blocks if present.
     const responseContent = getMessageContentString(ollamaResponse.content);
+    let jsonString = responseContent;
+
+    // First, try to find JSON within markdown code blocks.
     const jsonMatch = responseContent.match(/```(json)?\n(.*)\n```/s);
-    const jsonString = jsonMatch ? jsonMatch[2] : responseContent;
-    const toolCallArgs = JSON.parse(jsonString);
+    if (jsonMatch && jsonMatch[2]) {
+      jsonString = jsonMatch[2];
+    } else {
+      // If no markdown block, try to find a JSON object directly.
+      const jsonObjectMatch = responseContent.match(/{\s*".*?":.*?}/s);
+      if (jsonObjectMatch && jsonObjectMatch[0]) {
+        jsonString = jsonObjectMatch[0];
+      }
+    }
+
+    let toolCallArgs;
+    try {
+      toolCallArgs = JSON.parse(jsonString);
+    } catch (e) {
+      console.error("Failed to parse JSON from Ollama response:", jsonString);
+      throw e;
+    }
 
     response = {
       tool_calls: [
@@ -157,14 +175,19 @@ You must use the "respond_and_route" tool. Respond with a single JSON object tha
       config,
       LLMTask.ROUTER,
     );
-    const modelWithTools = model.bindTools([respondAndRouteTool], {
-      tool_choice: respondAndRouteTool.name,
-      ...(modelSupportsParallelToolCallsParam
-        ? {
-            parallel_tool_calls: false,
-          }
-        : {}),
-    });
+    const modelWithTools = model.bindTools(
+      [respondAndRouteTool],
+      provider === "ollama"
+        ? {}
+        : {
+            tool_choice: respondAndRouteTool.name,
+            ...(modelSupportsParallelToolCallsParam
+              ? {
+                  parallel_tool_calls: false,
+                }
+              : {}),
+          },
+    );
 
     response = await modelWithTools.invoke([
       {

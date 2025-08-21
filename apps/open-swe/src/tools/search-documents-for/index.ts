@@ -77,7 +77,7 @@ export function createSearchDocumentForTool(
           };
         }
 
-        const { model } = await loadModel(config, LLMTask.SUMMARIZER);
+        const { model, provider } = await loadModel(config, LLMTask.SUMMARIZER);
 
         const searchPrompt = DOCUMENT_SEARCH_PROMPT.replace(
           "{DOCUMENT_PAGE_CONTENT}",

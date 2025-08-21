@@ -95,7 +95,7 @@ export async function diagnoseError(
 
   logger.info("The last few tool calls resulted in errors. Diagnosing error.");
 
-  const { model } = await loadModel(config, LLMTask.SUMMARIZER);
+  const { model, provider } = await loadModel(config, LLMTask.SUMMARIZER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(
     config,
@@ -105,14 +105,19 @@ export async function diagnoseError(
     config,
     LLMTask.SUMMARIZER,
   );
-  const modelWithTools = model.bindTools([diagnoseErrorTool], {
-    tool_choice: diagnoseErrorTool.name,
-    ...(modelSupportsParallelToolCallsParam
-      ? {
-          parallel_tool_calls: false,
-        }
-      : {}),
-  });
+  const modelWithTools = model.bindTools(
+    [diagnoseErrorTool],
+    provider === "ollama"
+      ? {}
+      : {
+          tool_choice: diagnoseErrorTool.name,
+          ...(modelSupportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: false,
+              }
+            : {}),
+        },
+  );
 
   const response = await modelWithTools.invoke([
     {

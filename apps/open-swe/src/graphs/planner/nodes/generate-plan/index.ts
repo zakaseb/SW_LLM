@@ -55,7 +55,7 @@ export async function generatePlan(
   state: PlannerGraphState,
   config: GraphConfig,
 ): Promise<PlannerGraphUpdate> {
-  const { model } = await loadModel(config, LLMTask.PLANNER);
+  const { model, provider } = await loadModel(config, LLMTask.PLANNER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(config, LLMTask.PLANNER);
   const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
@@ -63,14 +63,19 @@ export async function generatePlan(
     LLMTask.PLANNER,
   );
   const sessionPlanTool = createSessionPlanToolFields();
-  const modelWithTools = model.bindTools([sessionPlanTool], {
-    tool_choice: sessionPlanTool.name,
-    ...(modelSupportsParallelToolCallsParam
-      ? {
-          parallel_tool_calls: false,
-        }
-      : {}),
-  });
+  const modelWithTools = model.bindTools(
+    [sessionPlanTool],
+    provider === "ollama"
+      ? {}
+      : {
+          tool_choice: sessionPlanTool.name,
+          ...(modelSupportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: false,
+              }
+            : {}),
+        },
+  );
 
   let optionalToolMessage: ToolMessage | undefined;
   const lastMessage = state.messages[state.messages.length - 1];

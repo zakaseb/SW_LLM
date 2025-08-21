@@ -294,18 +294,20 @@ export async function generateAction(
     },
   );
 
-  const { model } = await loadModel(config, LLMTask.PROGRAMMER);
+  const { model, provider } = await loadModel(config, LLMTask.PROGRAMMER);
 
   const modelWithTools = model.bindTools(
     isAnthropicModel ? providerTools.anthropic : providerTools.openai,
-    {
-      tool_choice: "auto",
-      ...(modelSupportsParallelToolCallsParam
-        ? {
-            parallel_tool_calls: true,
-          }
-        : {}),
-    },
+    provider === "ollama"
+      ? {}
+      : {
+          tool_choice: "auto",
+          ...(modelSupportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: true,
+              }
+            : {}),
+        },
   );
   const response = await modelWithTools.invoke(
     isAnthropicModel ? providerMessages.anthropic : providerMessages.openai,

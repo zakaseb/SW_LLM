@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   loadModel,
   supportsParallelToolCallsParam,
+  getModelManager,
 } from "../../../utils/llms/index.js";
 import { LLMTask } from "@open-swe/shared/open-swe/llm-task";
 import { getMessageString } from "../../../utils/message/content.js";
@@ -12,7 +13,10 @@ export async function createIssueFieldsFromMessages(
   messages: BaseMessage[],
   configurable: GraphConfig["configurable"],
 ): Promise<{ title: string; body: string }> {
-  const { model } = await loadModel({ configurable }, LLMTask.ROUTER);
+  const { model, provider } = await loadModel(
+    { configurable },
+    LLMTask.ROUTER,
+  );
   const githubIssueTool = {
     name: "create_github_issue",
     description: "Create a new GitHub issue with the given title and body.",
@@ -34,14 +38,19 @@ export async function createIssueFieldsFromMessages(
     LLMTask.ROUTER,
   );
   const modelWithTools = model
-    .bindTools([githubIssueTool], {
-      tool_choice: githubIssueTool.name,
-      ...(modelSupportsParallelToolCallsParam
-        ? {
-            parallel_tool_calls: false,
-          }
-        : {}),
-    })
+    .bindTools(
+      [githubIssueTool],
+      provider === "ollama"
+        ? {}
+        : {
+            tool_choice: githubIssueTool.name,
+            ...(modelSupportsParallelToolCallsParam
+              ? {
+                  parallel_tool_calls: false,
+                }
+              : {}),
+          },
+    )
     .withConfig({ tags: ["nostream"], runName: "create-issue-fields" });
 
   const prompt = `You're an AI programmer, tasked with taking the conversation history provided below, and creating a new GitHub issue.

@@ -99,6 +99,7 @@ async function identifyTasksToModifyFunc(
   state: PlannerGraphState,
   model: ConfigurableModel,
   supportsParallelToolCallsParam: boolean,
+  provider: string,
 ): Promise<PlanItem[]> {
   if (!state.planChangeRequest) {
     throw new Error("No plan change request found.");
@@ -141,15 +142,17 @@ async function identifyTasksToModifyFunc(
 
   const modelWithIdentifyChangesTool = model.bindTools(
     [identifyPlanChangesTool],
-    {
-      // The model should always call the tool when identifying plan changes.
-      tool_choice: identifyPlanChangesTool.name,
-      ...(supportsParallelToolCallsParam
-        ? {
-            parallel_tool_calls: false,
-          }
-        : {}),
-    },
+    provider === "ollama"
+      ? {}
+      : {
+          // The model should always call the tool when identifying plan changes.
+          tool_choice: identifyPlanChangesTool.name,
+          ...(supportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: false,
+              }
+            : {}),
+        },
   );
 
   const userInitialRequest = getInitialUserRequest(state.messages);
@@ -190,6 +193,7 @@ async function updatePlanTasksFunc(
   tasksToModify: PlanItem[],
   model: ConfigurableModel,
   supportsParallelToolCallsParam: boolean,
+  provider: string,
 ): Promise<string[]> {
   if (!state.planChangeRequest) {
     throw new Error("No plan change request found.");
@@ -214,15 +218,20 @@ async function updatePlanTasksFunc(
     schema: updatePlanTasksSchema,
   };
 
-  const modelWithUpdatePlanTasksTool = model.bindTools([updatePlanTasksTool], {
-    // The model should always call the tool when identifying plan changes.
-    tool_choice: updatePlanTasksTool.name,
-    ...(supportsParallelToolCallsParam
-      ? {
-          parallel_tool_calls: false,
-        }
-      : {}),
-  });
+  const modelWithUpdatePlanTasksTool = model.bindTools(
+    [updatePlanTasksTool],
+    provider === "ollama"
+      ? {}
+      : {
+          // The model should always call the tool when identifying plan changes.
+          tool_choice: updatePlanTasksTool.name,
+          ...(supportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: false,
+              }
+            : {}),
+        },
+  );
 
   const userInitialRequest = getInitialUserRequest(state.messages);
   const userFollowupRequest = getRecentUserRequest(state.messages);
@@ -265,7 +274,7 @@ export async function rewritePlan(
     throw new Error("No plan change request found.");
   }
 
-  const { model } = await loadModel(config, LLMTask.PLANNER);
+  const { model, provider } = await loadModel(config, LLMTask.PLANNER);
   const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
     config,
     LLMTask.PLANNER,
@@ -274,12 +283,14 @@ export async function rewritePlan(
     state,
     model,
     modelSupportsParallelToolCallsParam,
+    provider,
   );
   const updatedPlanTasks = await updatePlanTasks(
     state,
     tasksToModify,
     model,
     modelSupportsParallelToolCallsParam,
+    provider,
   );
 
   return {

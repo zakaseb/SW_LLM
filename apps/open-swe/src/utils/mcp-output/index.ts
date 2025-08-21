@@ -30,7 +30,7 @@ export async function handleMcpDocumentationOutput(
   });
 
   try {
-    const { model } = await loadModel(config, LLMTask.SUMMARIZER);
+    const { model, provider } = await loadModel(config, LLMTask.SUMMARIZER);
 
     const systemPrompt = DOCUMENT_TOC_GENERATION_PROMPT.replace(
       "{DOCUMENT_PAGE_CONTENT}",
