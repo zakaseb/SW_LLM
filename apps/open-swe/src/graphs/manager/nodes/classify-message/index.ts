@@ -5,6 +5,7 @@ import {
 } from "@open-swe/shared/open-swe/manager/types";
 import { createLangGraphClient } from "../../../../utils/langgraph-client.js";
 import {
+  AIMessage,
   BaseMessage,
   HumanMessage,
   isHumanMessage,
@@ -137,29 +138,46 @@ You must use the "respond_and_route" tool. Respond with a single JSON object tha
     // Manually construct the response object to mimic the tool-calling format.
     // Extract JSON from markdown code blocks if present.
     const responseContent = getMessageContentString(ollamaResponse.content);
-    let jsonString = responseContent;
+    let jsonString = "";
 
-    // First, try to find JSON within markdown code blocks.
-    const jsonMatch = responseContent.match(/```(json)?\n(.*)\n```/s);
-    if (jsonMatch && jsonMatch[2]) {
-      jsonString = jsonMatch[2];
+    // First, try to find a JSON object directly.
+    const jsonObjectMatch = responseContent.match(/{\s*".*?":.*?}/s);
+    if (jsonObjectMatch && jsonObjectMatch[0]) {
+      jsonString = jsonObjectMatch[0];
     } else {
-      // If no markdown block, try to find a JSON object directly.
-      const jsonObjectMatch = responseContent.match(/{\s*".*?":.*?}/s);
-      if (jsonObjectMatch && jsonObjectMatch[0]) {
-        jsonString = jsonObjectMatch[0];
+      // If no JSON object, try to find a JSON object within a markdown code block.
+      const jsonMatch = responseContent.match(/```(json)?\n(.*)\n```/s);
+      if (jsonMatch && jsonMatch[2]) {
+        jsonString = jsonMatch[2];
       }
     }
 
     let toolCallArgs;
-    try {
-      toolCallArgs = JSON.parse(jsonString);
-    } catch (e) {
-      console.error("Failed to parse JSON from Ollama response:", jsonString);
-      throw e;
+    if (jsonString) {
+      try {
+        toolCallArgs = JSON.parse(jsonString);
+      } catch (e) {
+        logger.warn(
+          "Failed to parse JSON from Ollama response, defaulting to no_op",
+          {
+            error: e,
+            response: jsonString,
+          },
+        );
+        toolCallArgs = { route: "no_op" };
+      }
+    } else {
+      logger.warn(
+        "No JSON found in Ollama response, defaulting to no_op",
+        {
+          response: responseContent,
+        },
+      );
+      toolCallArgs = { route: "no_op" };
     }
 
-    response = {
+    response = new AIMessage({
+      content: "",
       tool_calls: [
         {
           name: "respond_and_route",
@@ -167,9 +185,7 @@ You must use the "respond_and_route" tool. Respond with a single JSON object tha
           id: `tool_call_${Date.now()}`,
         },
       ],
-      content: "",
-      additional_kwargs: {},
-    };
+    });
   } else {
     const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
       config,
