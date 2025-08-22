@@ -120,7 +120,7 @@ export async function classifyMessage(
     // We need to manually construct the prompt and parse the JSON output.
     const ollamaToolPrompt = `${prompt}
 
-You must use the "respond_and_route" tool. Respond with a single JSON object that is a valid argument for this tool.`;
+You must use the "respond_and_route" tool. Respond with a single JSON object that is a valid argument for this tool. Do not include any other text, just the JSON object.`;
 
     const ollamaResponse = await model.invoke([
       {
