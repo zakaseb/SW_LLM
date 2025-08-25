@@ -5,7 +5,6 @@ import {
 } from "@open-swe/shared/open-swe/manager/types";
 import { createLangGraphClient } from "../../../../utils/langgraph-client.js";
 import {
-  AIMessage,
   BaseMessage,
   HumanMessage,
   isHumanMessage,
@@ -108,116 +107,42 @@ export async function classifyMessage(
     description: "Respond to the user's message and determine how to route it.",
     schema,
   };
-  const { model, provider } = await loadModel(config, LLMTask.ROUTER);
+  const { model, provider } = await loadModel(config, LLMTask.ROUTER, "json");
 
   if (!model) {
     throw new Error(`Model could not be loaded for provider ${provider}`);
   }
 
-  let response;
-  if (provider === "ollama") {
-    // Ollama doesn't support the bindTools method in the same way.
-    // We need to manually construct the prompt and parse the JSON output.
-    const ollamaToolPrompt = `${prompt}
-
-You must use the "respond_and_route" tool. Respond with a single JSON object that is a valid argument for this tool. Do not include any other text, just the JSON object.`;
-
-    const ollamaResponse = await model.invoke([
-      {
-        role: "system",
-        content: ollamaToolPrompt,
-      },
-      {
-        role: "user",
-        content: extractContentWithoutDetailsFromIssueBody(
-          getMessageContentString(userMessage.content),
-        ),
-      },
-    ]);
-
-    // Manually construct the response object to mimic the tool-calling format.
-    // Extract JSON from markdown code blocks if present.
-    const responseContent = getMessageContentString(ollamaResponse.content);
-    let jsonString = "";
-
-    // First, try to find a JSON object directly.
-    const jsonObjectMatch = responseContent.match(/{\s*".*?":.*?}/s);
-    if (jsonObjectMatch && jsonObjectMatch[0]) {
-      jsonString = jsonObjectMatch[0];
-    } else {
-      // If no JSON object, try to find a JSON object within a markdown code block.
-      const jsonMatch = responseContent.match(/```(json)?\n(.*)\n```/s);
-      if (jsonMatch && jsonMatch[2]) {
-        jsonString = jsonMatch[2];
-      }
-    }
-
-    let toolCallArgs;
-    if (jsonString) {
-      try {
-        toolCallArgs = JSON.parse(jsonString);
-      } catch (e) {
-        logger.warn(
-          "Failed to parse JSON from Ollama response, defaulting to no_op",
-          {
-            error: e,
-            response: jsonString,
-          },
-        );
-        toolCallArgs = { route: "no_op" };
-      }
-    } else {
-      logger.warn(
-        "No JSON found in Ollama response, defaulting to no_op",
-        {
-          response: responseContent,
+  const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
+    config,
+    LLMTask.ROUTER,
+  );
+  const modelWithTools = model.bindTools(
+    [respondAndRouteTool],
+    provider === "ollama"
+      ? {}
+      : {
+          tool_choice: respondAndRouteTool.name,
+          ...(modelSupportsParallelToolCallsParam
+            ? {
+                parallel_tool_calls: false,
+              }
+            : {}),
         },
-      );
-      toolCallArgs = { route: "no_op" };
-    }
+  );
 
-    response = new AIMessage({
-      content: "",
-      tool_calls: [
-        {
-          name: "respond_and_route",
-          args: toolCallArgs,
-          id: `tool_call_${Date.now()}`,
-        },
-      ],
-    });
-  } else {
-    const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
-      config,
-      LLMTask.ROUTER,
-    );
-    const modelWithTools = model.bindTools(
-      [respondAndRouteTool],
-      provider === "ollama"
-        ? {}
-        : {
-            tool_choice: respondAndRouteTool.name,
-            ...(modelSupportsParallelToolCallsParam
-              ? {
-                  parallel_tool_calls: false,
-                }
-              : {}),
-          },
-    );
-
-    response = await modelWithTools.invoke([
-      {
-        role: "system",
-        content: prompt,
-      },
-      {
-        role: "user",
-        content: extractContentWithoutDetailsFromIssueBody(
-          getMessageContentString(userMessage.content),
-        ),
-      },
-    ]);
-  }
+  const response = await modelWithTools.invoke([
+    {
+      role: "system",
+      content: prompt,
+    },
+    {
+      role: "user",
+      content: extractContentWithoutDetailsFromIssueBody(
+        getMessageContentString(userMessage.content),
+      ),
+    },
+  ]);
 
   const toolCall = response.tool_calls?.[0];
   if (!toolCall) {

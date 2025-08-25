@@ -43,7 +43,7 @@ export async function generateConclusion(
   state: GraphState,
   config: GraphConfig,
 ): Promise<Command> {
-  const { model, provider } = await loadModel(config, LLMTask.SUMMARIZER);
+  const { model } = await loadModel(config, LLMTask.SUMMARIZER);
   const modelManager = getModelManager();
   const modelName = modelManager.getModelNameForTask(
     config,

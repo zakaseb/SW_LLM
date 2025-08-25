@@ -4,7 +4,6 @@ import { z } from "zod";
 import {
   loadModel,
   supportsParallelToolCallsParam,
-  getModelManager,
 } from "../../../utils/llms/index.js";
 import { LLMTask } from "@open-swe/shared/open-swe/llm-task";
 import { getMessageString } from "../../../utils/message/content.js";

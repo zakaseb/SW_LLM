@@ -5,9 +5,13 @@ import {
   TASK_TO_CONFIG_DEFAULTS_MAP,
 } from "@open-swe/shared/open-swe/llm-task";
 
-export async function loadModel(config: GraphConfig, task: LLMTask) {
+export async function loadModel(
+  config: GraphConfig,
+  task: LLMTask,
+  format?: "json",
+) {
   const modelManager = getModelManager();
-  const model = await modelManager.loadModel(config, task);
+  const model = await modelManager.loadModel(config, task, format);
   if (!model) {
     throw new Error(`Model loading returned undefined for task: ${task}`);
   }

@@ -30,6 +30,7 @@ interface ModelLoadConfig {
   maxTokens?: number;
   thinkingModel?: boolean;
   thinkingBudgetTokens?: number;
+  format?: "json";
 }
 
 export enum CircuitState {
@@ -104,9 +105,16 @@ export class ModelManager {
   /**
    * Load a single model (no fallback during loading)
    */
-  async loadModel(graphConfig: GraphConfig, task: LLMTask) {
+  async loadModel(
+    graphConfig: GraphConfig,
+    task: LLMTask,
+    format?: "json",
+  ) {
     const baseConfig = this.getBaseConfigForTask(graphConfig, task);
-    const model = await this.initializeModel(baseConfig, graphConfig);
+    const model = await this.initializeModel(
+      { ...baseConfig, format },
+      graphConfig,
+    );
     return { model, provider: baseConfig.provider };
   }
 
@@ -166,6 +174,7 @@ export class ModelManager {
       maxTokens,
       thinkingModel,
       thinkingBudgetTokens,
+      format,
     } = config;
 
     const thinkingMaxTokens = thinkingBudgetTokens
@@ -183,6 +192,7 @@ export class ModelManager {
       modelProvider: provider,
       max_retries: MAX_RETRIES,
       ...(apiKey ? { apiKey } : {}),
+      ...(provider === "ollama" ? { format } : {}),
       ...(thinkingModel && provider === "anthropic"
         ? {
             thinking: { budget_tokens: thinkingBudgetTokens, type: "enabled" },
@@ -379,6 +389,13 @@ export class ModelManager {
     task: LLMTask,
   ): ModelLoadConfig | null {
     const defaultModels: Record<Provider, Record<LLMTask, string>> = {
+      ollama: {
+        [LLMTask.PLANNER]: "llama3",
+        [LLMTask.PROGRAMMER]: "llama3",
+        [LLMTask.REVIEWER]: "llama3",
+        [LLMTask.ROUTER]: "llama3",
+        [LLMTask.SUMMARIZER]: "llama3",
+      },
       anthropic: {
         [LLMTask.PLANNER]: "claude-sonnet-4-0",
         [LLMTask.PROGRAMMER]: "claude-sonnet-4-0",
