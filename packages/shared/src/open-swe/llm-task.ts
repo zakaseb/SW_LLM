@@ -29,23 +29,23 @@ export enum LLMTask {
 
 export const TASK_TO_CONFIG_DEFAULTS_MAP = {
   [LLMTask.PLANNER]: {
-    modelName: "ollama:llama3",
+    modelName: "ollama:gpt-oss",
     temperature: 0,
   },
   [LLMTask.PROGRAMMER]: {
-    modelName: "ollama:llama3",
+    modelName: "ollama:gpt-oss",
     temperature: 0,
   },
   [LLMTask.REVIEWER]: {
-    modelName: "ollama:llama3",
+    modelName: "ollama:gpt-oss",
     temperature: 0,
   },
   [LLMTask.ROUTER]: {
-    modelName: "ollama:llama3",
+    modelName: "ollama:gpt-oss",
     temperature: 0,
   },
   [LLMTask.SUMMARIZER]: {
-    modelName: "ollama:llama3",
+    modelName: "ollama:gpt-oss",
     temperature: 0,
   },
 };
