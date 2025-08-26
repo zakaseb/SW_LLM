@@ -390,11 +390,11 @@ export class ModelManager {
   ): ModelLoadConfig | null {
     const defaultModels: Record<Provider, Record<LLMTask, string>> = {
       ollama: {
-        [LLMTask.PLANNER]: "llama3",
-        [LLMTask.PROGRAMMER]: "llama3",
-        [LLMTask.REVIEWER]: "llama3",
-        [LLMTask.ROUTER]: "llama3",
-        [LLMTask.SUMMARIZER]: "llama3",
+        [LLMTask.PLANNER]: "gpt-oss",
+        [LLMTask.PROGRAMMER]: "gpt-oss",
+        [LLMTask.REVIEWER]: "gpt-oss",
+        [LLMTask.ROUTER]: "gpt-oss",
+        [LLMTask.SUMMARIZER]: "gpt-oss",
       },
       anthropic: {
         [LLMTask.PLANNER]: "claude-sonnet-4-0",
