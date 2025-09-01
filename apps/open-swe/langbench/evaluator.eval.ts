@@ -37,9 +37,7 @@ async function processPR(prData: PRData): Promise<PRProcessResult> {
     evalsFiles: [],
     testFiles: [],
   };
-  const daytona = new Daytona({
-    organizationId: process.env.DAYTONA_ORGANIZATION_ID,
-  });
+  const daytona = new Daytona();
   let sandbox: Sandbox | undefined;
 
   try {

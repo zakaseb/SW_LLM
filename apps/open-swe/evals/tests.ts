@@ -104,7 +104,7 @@ export const runMyPyTypeCheck = async (
       const errorLines = execution.result
         .split("\n")
         .filter(
-          (line) => line.includes(": error:") || line.includes(": warning:"),
+          (line: any) => line.includes(": error:") || line.includes(": warning:"),
         );
 
       const issueCount = errorLines.length;

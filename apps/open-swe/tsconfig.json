@@ -18,6 +18,10 @@
     "strictFunctionTypes": false,
     "outDir": "dist",
     "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@daytonaio/sdk": ["src/daytonaStub.ts"]
+    },
     "types": ["jest", "node"],
     "resolveJsonModule": true,
     "isolatedModules": true

@@ -2,6 +2,7 @@ import {
   ConfigurableModel,
   initChatModel,
 } from "langchain/chat_models/universal";
+import { ChatOllama } from "@langchain/community/chat_models/ollama";
 import { GraphConfig } from "@open-swe/shared/open-swe/types";
 import { createLogger, LogLevel } from "../logger.js";
 import {
@@ -47,6 +48,7 @@ export const PROVIDER_FALLBACK_ORDER = [
   "openai",
   "anthropic",
   "google-genai",
+  "ollama",
 ] as const;
 export type Provider = (typeof PROVIDER_FALLBACK_ORDER)[number];
 
@@ -82,6 +84,8 @@ const providerToApiKey = (
       return apiKeys.anthropicApiKey;
     case "google-genai":
       return apiKeys.googleApiKey;
+    case "ollama":
+      return ""; // No API key needed for Ollama
     default:
       throw new Error(`Unknown provider: ${providerName}`);
   }
@@ -113,6 +117,9 @@ export class ModelManager {
     graphConfig: GraphConfig,
     provider: Provider,
   ): string | null {
+    if (provider === "ollama") {
+      return null;
+    }
     const userLogin = (graphConfig.configurable as any)?.langgraph_auth_user
       ?.display_name;
     const secretsEncryptionKey = process.env.SECRETS_ENCRYPTION_KEY;
@@ -203,6 +210,12 @@ export class ModelManager {
       modelName,
     });
 
+    if (provider === "ollama") {
+      return new ChatOllama({
+        model: modelName,
+        temperature,
+      });
+    }
     return await initChatModel(modelName, modelOptions);
   }
 
@@ -398,6 +411,13 @@ export class ModelManager {
         [LLMTask.REVIEWER]: "gpt-5",
         [LLMTask.ROUTER]: "gpt-5-nano",
         [LLMTask.SUMMARIZER]: "gpt-5-mini",
+      },
+      ollama: {
+        [LLMTask.PLANNER]: "codellama",
+        [LLMTask.PROGRAMMER]: "codellama",
+        [LLMTask.REVIEWER]: "codellama",
+        [LLMTask.ROUTER]: "codellama",
+        [LLMTask.SUMMARIZER]: "codellama",
       },
     };
 
