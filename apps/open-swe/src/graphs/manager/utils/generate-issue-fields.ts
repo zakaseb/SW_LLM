@@ -61,5 +61,26 @@ With the above conversation history in mind, please call the ${githubIssueTool.n
     },
   ]);
   const toolCall = parseToolCallFromResult(result);
-  return toolCall.args as z.infer<typeof githubIssueTool.schema>;
+
+  if (!toolCall) {
+    const raw = (result.content ?? "").toString();
+    const fallbackArgs = {
+      title: "Clarification needed: LLM output couldn't be parsed",
+      body: `Original LLM output:\n\n${raw}`,
+    };
+    return fallbackArgs;
+  }
+
+  if (toolCall.args) {
+    const args = toolCall.args;
+    if (!args.title || typeof args.title !== "string" || args.title.trim() === "") {
+      args.title = (args.body ?? "").split("\n").find(Boolean) ?? "Auto-generated issue";
+    }
+    return args;
+  }
+
+  return {
+    title: "Clarification needed: invalid toolCall args",
+    body: "The LLM output could not be parsed into issue fields.",
+  };
 }
