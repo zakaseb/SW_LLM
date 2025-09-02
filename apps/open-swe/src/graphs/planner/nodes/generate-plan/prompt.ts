@@ -73,7 +73,9 @@ Always format your plan items with proper markdown. Avoid large headers, but you
 
 Remember: Your goal is to create a focused, executable plan that efficiently accomplishes the user's request using the context you've already gathered.
 
-You must respond ONLY with a JSON object of the form:
+INSTRUCTIONS: Respond with ONLY a single JSON object (no explanation). Wrap it in triple backticks and label as json.
+Example:
+\`\`\`json
 {
   "name": "session_plan",
   "arguments": {
@@ -83,4 +85,5 @@ You must respond ONLY with a JSON object of the form:
     ]
   }
 }
+\`\`\`
 `;
