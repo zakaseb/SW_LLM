@@ -7,6 +7,7 @@ import {
 } from "../../../utils/llms/index.js";
 import { LLMTask } from "@open-swe/shared/open-swe/llm-task";
 import { getMessageString } from "../../../utils/message/content.js";
+import { parseToolCallFromResult } from "./parse-toolcall.js";
 
 export async function createIssueFieldsFromMessages(
   messages: BaseMessage[],
@@ -59,9 +60,6 @@ With the above conversation history in mind, please call the ${githubIssueTool.n
       content: prompt,
     },
   ]);
-  const toolCall = result.tool_calls?.[0];
-  if (!toolCall) {
-    throw new Error("No tool call found in result");
-  }
+  const toolCall = parseToolCallFromResult(result);
   return toolCall.args as z.infer<typeof githubIssueTool.schema>;
 }
