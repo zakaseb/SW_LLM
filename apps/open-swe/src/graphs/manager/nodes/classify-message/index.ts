@@ -134,9 +134,19 @@ export async function classifyMessage(
     },
   ]);
 
-  const toolCall = response.tool_calls?.[0];
+  let toolCall = response.tool_calls?.[0];
+
   if (!toolCall) {
-    throw new Error("No tool call found.");
+    try {
+      const parsed = JSON.parse(response.content.toString() || "{}");
+      if (parsed && parsed.name && parsed.args) {
+        toolCall = { name: parsed.name, args: parsed.args };
+      } else {
+        throw new Error("No tool call found and parsing failed.");
+      }
+    } catch (err) {
+      throw new Error("No tool call found and response was not valid JSON.");
+    }
   }
   const toolCallArgs = toolCall.args as z.infer<
     typeof BASE_CLASSIFICATION_SCHEMA

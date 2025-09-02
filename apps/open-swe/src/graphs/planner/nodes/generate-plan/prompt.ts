@@ -71,4 +71,16 @@ Always format your plan items with proper markdown. Avoid large headers, but you
 
 {SCRATCHPAD}
 
-Remember: Your goal is to create a focused, executable plan that efficiently accomplishes the user's request using the context you've already gathered.`;
+Remember: Your goal is to create a focused, executable plan that efficiently accomplishes the user's request using the context you've already gathered.
+
+You must respond ONLY with a JSON object of the form:
+{
+  "name": "session_plan",
+  "arguments": {
+    "plan": [
+        "...",
+        "..."
+    ]
+  }
+}
+`;
