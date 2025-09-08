@@ -62,8 +62,11 @@ The source of the request is: {REQUEST_SOURCE}
 # Routing Options
 Based on all of the context provided above, generate a response to send to the user, including messaging about the route you'll select from the below options in your next step.
 Your routing options are:
-{UPDATE_PROGRAMMER_ROUTING_OPTION}{START_PLANNER_ROUTING_OPTION}{UPDATE_PLANNER_ROUTING_OPTION}{RESUME_AND_UPDATE_PLANNER_ROUTING_OPTION}{CREATE_NEW_ISSUE_ROUTING_OPTION}{START_PLANNER_FOR_FOLLOWUP_ROUTING_OPTION}
-- no_op: This should be called when the user's message is not a new request, additional context, or a new issue to create. This should only be called when none of the routing options are appropriate.
+{ROUTING_OPTIONS}
+
+You must always respond in JSON.
+The arguments.route field must be one of: {ROUTING_OPTIONS}.
+Do not invent new routes.
 
 # Additional Context
 You're an open source AI coding agent built by LangChain.

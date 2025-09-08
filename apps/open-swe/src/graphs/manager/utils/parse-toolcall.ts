@@ -91,17 +91,18 @@ export function parseToolCallFromResult(response: AIMessageChunk): {
     }
   }
 
-  if (toolCall) {
-    const safeTool = BASE_CLASSIFICATION_SCHEMA.safeParse(toolCall.args);
-    if (safeTool.success) {
-      toolCall.args = safeTool.data;
-    } else {
-      toolCall.args = {
-        route: "no_op",
-        response: "Invalid arguments, fell back.",
-      };
-    }
+  const safeTool = BASE_CLASSIFICATION_SCHEMA.safeParse(toolCall?.args);
+  let toolArgs;
+  if (!safeTool.success) {
+    toolArgs = {
+      route: "no_op",
+      response: "Invalid arguments, fell back.",
+    };
   } else {
+    toolArgs = safeTool.data;
+  }
+
+  if (!toolCall) {
     console.error(
       "[classify-message] Failed to parse tool call from LLM response — using fallback tool.",
     );
@@ -111,6 +112,8 @@ export function parseToolCallFromResult(response: AIMessageChunk): {
         original_text: (response.content ?? "").toString(),
       },
     };
+  } else {
+    toolCall.args = toolArgs;
   }
 
   return {

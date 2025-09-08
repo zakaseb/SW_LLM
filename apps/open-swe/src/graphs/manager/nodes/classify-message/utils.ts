@@ -77,6 +77,7 @@ export function createClassificationPromptAndToolSchema(inputs: {
 }): {
   prompt: string;
   schema: z.ZodTypeAny;
+  routingOptions: string[];
 } {
   const conversationHistoryWithoutLatest = removeLastHumanMessage(
     inputs.messages,
@@ -181,5 +182,6 @@ export function createClassificationPromptAndToolSchema(inputs: {
   return {
     prompt,
     schema,
+    routingOptions,
   };
 }
