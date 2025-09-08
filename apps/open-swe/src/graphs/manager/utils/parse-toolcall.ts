@@ -1,4 +1,6 @@
 import { AIMessageChunk } from "@langchain/core/messages";
+import { z } from "zod";
+import { BASE_CLASSIFICATION_SCHEMA } from "../nodes/classify-message/schemas.js";
 
 function stripCodeFences(text: string): string {
   // If the model wraps JSON in ```json ... ``` return inner, else return text
@@ -47,89 +49,70 @@ export function parseToolCallFromResult(response: AIMessageChunk): {
     type: string;
   }[];
 } {
-  let toolCall = response.tool_calls?.[0];
+  let toolCall: { name: string; args: any } | undefined =
+    response.tool_calls?.[0];
 
   if (!toolCall) {
-    // Get raw text from common fields (adjust if your wrapper uses different names)
-    const raw = (
-      response.content ??
-      JSON.stringify(response)
-    ).toString();
-
-    // Log raw output for debugging (persist if you prefer)
+    const raw = (response.content ?? JSON.stringify(response)).toString();
     console.log("[classify-message] raw LLM output:", raw);
 
-    // 1) strip fences
     const candidate = stripCodeFences(raw);
-
-    // 2) try parsing candidate directly
+    let parsed;
     try {
-      const parsed = JSON.parse(candidate);
-      if (parsed && (parsed.name || parsed.tool || parsed.action)) {
-        toolCall = {
-          name: parsed.name ?? parsed.tool ?? parsed.action,
-          args: parsed.arguments ?? parsed.args ?? parsed,
-        };
-      }
-    } catch (_) {
-      // 3) try to extract a balanced JSON substring
+      parsed = JSON.parse(candidate);
+    } catch {
       const jsonSub = extractFirstBalancedObject(candidate);
       if (jsonSub) {
         try {
-          const parsed2 = JSON.parse(jsonSub);
-          if (parsed2 && (parsed2.name || parsed2.tool || parsed2.action)) {
-            toolCall = {
-              name: parsed2.name ?? parsed2.tool ?? parsed2.action,
-              args: parsed2.arguments ?? parsed2.args ?? parsed2,
-            };
-          }
-        } catch (_) {
-          // 4) attempt lightweight repair then parse
+          parsed = JSON.parse(jsonSub);
+        } catch {
           try {
-            const repaired = repairJsonLikeString(jsonSub || candidate);
-            const parsed3 = JSON.parse(repaired);
-            if (parsed3 && (parsed3.name || parsed3.tool || parsed3.action)) {
-              toolCall = {
-                name: parsed3.name ?? parsed3.tool ?? parsed3.action,
-                args: parsed3.arguments ?? parsed3.args ?? parsed3,
-              };
-            }
-          } catch (__) {
-            // nothing left
+            const repaired = repairJsonLikeString(jsonSub);
+            parsed = JSON.parse(repaired);
+          } catch {
+            // ignore
           }
         }
       } else {
-        // Try repairing entire candidate if no balanced substring was found
         try {
-          const repairedWhole = repairJsonLikeString(candidate);
-          const parsed4 = JSON.parse(repairedWhole);
-          if (parsed4 && (parsed4.name || parsed4.tool || parsed4.action)) {
-            toolCall = {
-              name: parsed4.name ?? parsed4.tool ?? parsed4.action,
-              args: parsed4.arguments ?? parsed4.args ?? parsed4,
-            };
-          }
-        } catch (__) {
-          // still nothing
+          const repaired = repairJsonLikeString(candidate);
+          parsed = JSON.parse(repaired);
+        } catch {
+          // ignore
         }
       }
     }
+
+    if (parsed && (parsed.name || parsed.tool || parsed.action)) {
+      toolCall = {
+        name: parsed.name ?? parsed.tool ?? parsed.action,
+        args: parsed.arguments ?? parsed.args ?? parsed,
+      };
+    }
   }
 
-  // If still no toolCall, return a safe fallback (do NOT throw)
-  if (!toolCall) {
+  if (toolCall) {
+    const safeTool = BASE_CLASSIFICATION_SCHEMA.safeParse(toolCall.args);
+    if (safeTool.success) {
+      toolCall.args = safeTool.data;
+    } else {
+      toolCall.args = {
+        route: "no_op",
+        response: "Invalid arguments, fell back.",
+      };
+    }
+  } else {
     console.error(
       "[classify-message] Failed to parse tool call from LLM response — using fallback tool.",
     );
     toolCall = {
-      name: "request_human_help", // map this to a real tool in your tool registry (or use "default_handler")
+      name: "request_human_help",
       args: {
-        original_text: (
-          response.content ?? ""
-        ).toString(),
+        original_text: (response.content ?? "").toString(),
       },
     };
   }
+
   return {
     tool_calls: [
       {

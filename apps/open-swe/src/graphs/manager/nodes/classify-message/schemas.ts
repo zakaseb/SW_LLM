@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+export const validRoutes = [
+  "update_programmer",
+  "start_planner",
+  "start_planner_for_followup",
+  "update_planner",
+  "resume_and_update_planner",
+  "create_new_issue",
+  "no_op",
+] as const;
+
 export const BASE_CLASSIFICATION_SCHEMA = z.object({
   internal_reasoning: z
     .string()
@@ -12,7 +22,7 @@ export const BASE_CLASSIFICATION_SCHEMA = z.object({
       "The response to send to the user. This should be clear, concise, and include any additional context the user may need to know about how/why you're handling their new message.",
     ),
   route: z
-    .enum(["no_op"])
+    .enum(validRoutes)
     .describe("The route to take to handle the user's new message.")
     .default("no_op"),
 });
