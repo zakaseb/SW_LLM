@@ -71,18 +71,18 @@ Carefully read over all of the provided context above, and if you determine that
 Otherwise, if you determine that the task has been successfully completed, call the \`{COMPLETE_TOOL_NAME}\` tool.
 </review-guidelines>
 
-INSTRUCTIONS: Respond with ONLY a single JSON object (no explanation). Wrap it in triple backticks and label as json.
-Example:
-\`\`\`json
+You are a function-calling model.
+Always respond with JSON ONLY, matching this schema:
+
 {
-  "name": "tool_name",
-  "arguments": { ... }
+  "name": "string",
+  "arguments": {
+    "review": "string",
+    "additional_actions": ["string"] (optional)
+  }
 }
-\`\`\`
 
-If you cannot choose a tool, return:
-
-{ "name": "clarify_user_intent", "arguments": { "message": "reason" } }
+DO NOT output natural language. DO NOT include explanations.
 `;
 
 const getScratchpadNotesString = (messages: BaseMessage[]) => {

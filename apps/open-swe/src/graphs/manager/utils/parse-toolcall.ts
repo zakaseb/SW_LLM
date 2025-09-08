@@ -40,8 +40,12 @@ function repairJsonLikeString(s: string): string {
 }
 
 export function parseToolCallFromResult(response: AIMessageChunk): {
-  name: string;
-  args: any;
+  tool_calls: {
+    name: string;
+    args: any;
+    id: string;
+    type: string;
+  }[];
 } {
   let toolCall = response.tool_calls?.[0];
 
@@ -53,7 +57,7 @@ export function parseToolCallFromResult(response: AIMessageChunk): {
     ).toString();
 
     // Log raw output for debugging (persist if you prefer)
-    console.warn("[classify-message] raw LLM output:", raw);
+    console.log("[classify-message] raw LLM output:", raw);
 
     // 1) strip fences
     const candidate = stripCodeFences(raw);
@@ -126,5 +130,13 @@ export function parseToolCallFromResult(response: AIMessageChunk): {
       },
     };
   }
-  return toolCall;
+  return {
+    tool_calls: [
+      {
+        id: "ollama_tool_1",
+        type: "function",
+        ...toolCall,
+      },
+    ],
+  };
 }

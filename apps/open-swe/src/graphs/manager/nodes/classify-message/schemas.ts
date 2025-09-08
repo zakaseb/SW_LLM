@@ -13,14 +13,16 @@ export const BASE_CLASSIFICATION_SCHEMA = z.object({
     ),
   route: z
     .enum(["no_op"])
-    .describe("The route to take to handle the user's new message."),
+    .describe("The route to take to handle the user's new message.")
+    .default("no_op"),
 });
 
 export function createClassificationSchema(enumOptions: [string, ...string[]]) {
   const schema = BASE_CLASSIFICATION_SCHEMA.extend({
     route: z
       .enum(enumOptions)
-      .describe("The route to take to handle the user's new message."),
+      .describe("The route to take to handle the user's new message.")
+      .default("no_op"),
   });
 
   return schema;

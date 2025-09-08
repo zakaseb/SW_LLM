@@ -134,10 +134,18 @@ export async function classifyMessage(
     },
   ]);
 
-  const toolCall = parseToolCallFromResult(response);
+  const toolCall = parseToolCallFromResult(response).tool_calls[0];
   const toolCallArgs = toolCall.args as z.infer<
     typeof BASE_CLASSIFICATION_SCHEMA
   >;
+
+  const validRoutes = (schema as z.AnyZodObject).shape.route._def.values;
+  if (!validRoutes.includes(toolCallArgs.route)) {
+    logger.warn(
+      `[WARN] Invalid route: ${toolCallArgs.route}, falling back to 'no_op'`,
+    );
+    toolCallArgs.route = "no_op";
+  }
 
   if (toolCallArgs.route === "no_op") {
     // If it's a no_op, just add the message to the state and return.

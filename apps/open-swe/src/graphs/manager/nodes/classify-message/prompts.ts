@@ -96,16 +96,18 @@ Always respond with proper markdown formatting. Avoid large headings, and instea
 You do not need to explain why you're taking that route to the user.
 Your response will not exceed two sentences. You will be rewarded for being concise.
 
-INSTRUCTIONS: Respond with ONLY a single JSON object (no explanation). Wrap it in triple backticks and label as json.
-Example:
-\`\`\`json
+You are a function-calling model.
+Always respond with JSON ONLY, matching this schema:
+
 {
-  "name": "run_tests",
-  "arguments": { "language": "python", "timeout_secs": 60 }
+  "name": "string",
+  "arguments": {
+    "route": "string",
+    "title": "string (optional)",
+    "body": "string (optional)",
+    "labels": ["string"] (optional)
+  }
 }
-\`\`\`
 
-If you cannot choose a tool, return:
-
-{ "name": "clarify_user_intent", "arguments": { "message": "reason" } }
+DO NOT output natural language. DO NOT include explanations.
 `;

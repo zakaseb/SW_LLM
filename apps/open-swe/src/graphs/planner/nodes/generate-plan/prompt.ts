@@ -73,17 +73,18 @@ Always format your plan items with proper markdown. Avoid large headers, but you
 
 Remember: Your goal is to create a focused, executable plan that efficiently accomplishes the user's request using the context you've already gathered.
 
-INSTRUCTIONS: Respond with ONLY a single JSON object (no explanation). Wrap it in triple backticks and label as json.
-Example:
-\`\`\`json
+You are a function-calling model.
+Always respond with JSON ONLY, matching this schema:
+
 {
   "name": "session_plan",
   "arguments": {
     "plan": [
-        "...",
-        "..."
+        "string",
+        "string"
     ]
   }
 }
-\`\`\`
+
+DO NOT output natural language. DO NOT include explanations.
 `;
