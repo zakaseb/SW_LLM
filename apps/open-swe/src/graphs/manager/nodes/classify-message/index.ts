@@ -26,7 +26,6 @@ import { getGitHubTokensFromConfig } from "../../../../utils/github-tokens.js";
 import { createIssueFieldsFromMessages } from "../../utils/generate-issue-fields.js";
 import {
   extractContentWithoutDetailsFromIssueBody,
-  extractIssueTitleAndContentFromMessage,
   formatContentForIssueBody,
 } from "../../../../utils/github/issue-messages.js";
 import { getDefaultHeaders } from "../../../../utils/default-headers.js";
@@ -191,23 +190,37 @@ export async function classifyMessage(
 
   // If it's not a no_op, ensure there is a GitHub issue with the user's request.
   if (!githubIssueId) {
-    const { title } = await createIssueFieldsFromMessages(
+    const issuePayload = await createIssueFieldsFromMessages(
       state.messages,
       config.configurable,
     );
-    const { content: body } = extractIssueTitleAndContentFromMessage(
-      getMessageContentString(userMessage.content),
-    );
 
-    const newIssue = await createIssue({
-      owner: state.targetRepository.owner,
-      repo: state.targetRepository.repo,
-      title,
-      body: formatContentForIssueBody(body),
-      githubAccessToken,
-    });
+    let newIssue = null;
+    try {
+      newIssue = await createIssue({
+        owner: state.targetRepository.owner,
+        repo: state.targetRepository.repo,
+        title: issuePayload.title,
+        body: formatContentForIssueBody(issuePayload.body),
+        githubAccessToken,
+      });
+    } catch (err) {
+      console.error("[classify-message] GitHub API threw an error:", err);
+      throw err; // rethrow the real error so you see the actual GitHub response
+    }
+
     if (!newIssue) {
-      throw new Error("Failed to create issue.");
+      console.error(
+        "[classify-message] createIssue returned no result. Payload sent was:",
+        {
+          owner: state.targetRepository.owner,
+          repo: state.targetRepository.repo,
+          ...issuePayload,
+        },
+      );
+      throw new Error(
+        "GitHub API returned no data — check network or authentication.",
+      );
     }
     githubIssueId = newIssue.number;
     // Ensure we remove the old message, and replace it with an exact copy,

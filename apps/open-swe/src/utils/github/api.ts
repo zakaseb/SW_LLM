@@ -412,26 +412,17 @@ export async function createIssue({
     auth: githubAccessToken,
   });
 
-  try {
-    const { data: issue } = await octokit.issues.create({
-      owner,
-      repo,
-      title,
-      body,
-    });
+  const payload = { owner, repo, title, body };
+  console.info("[github/api] Sending createIssue request:", payload);
 
+  try {
+    const { data: issue } = await octokit.issues.create(payload);
+
+    console.info("[github/api] GitHub createIssue response:", issue);
     return issue;
   } catch (error) {
-    const errorFields =
-      error instanceof Error
-        ? {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
-          }
-        : { error };
-    logger.error(`Failed to create issue`, errorFields);
-    return null;
+    console.error("[github/api] GitHub createIssue failed. Error:", error);
+    throw error;
   }
 }
 
