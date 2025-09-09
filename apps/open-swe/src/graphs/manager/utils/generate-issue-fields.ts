@@ -60,7 +60,10 @@ With the above conversation history in mind, please call the ${githubIssueTool.n
       content: prompt,
     },
   ]);
-  const toolCall = parseToolCallFromResult(result).tool_calls[0];
+  const toolCall = parseToolCallFromResult(
+    result,
+    githubIssueTool.schema,
+  ).tool_calls[0];
 
   if (!toolCall) {
     const raw = (result.content ?? "").toString();

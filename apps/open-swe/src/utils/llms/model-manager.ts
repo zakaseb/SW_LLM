@@ -12,6 +12,7 @@ import {
 import { isAllowedUser } from "@open-swe/shared/github/allowed-users";
 import { decryptSecret } from "@open-swe/shared/crypto";
 import { API_KEY_REQUIRED_MESSAGE } from "@open-swe/shared/constants";
+import { isLocalMode } from "@open-swe/shared/open-swe/local-mode";
 
 const logger = createLogger(LogLevel.INFO, "ModelManager");
 
@@ -261,40 +262,43 @@ export class ModelManager {
       }
     }
 
-    // Add fallback models
-    for (const provider of this.config.fallbackOrder) {
-      const fallbackModel = this.getDefaultModelForProvider(provider, task);
-      if (
-        fallbackModel &&
-        (!selectedModelConfig ||
-          fallbackModel.modelName !== selectedModelConfig.modelName)
-      ) {
-        // Check if fallback model is a thinking model
-        const isThinkingModel =
-          (provider === "openai" && fallbackModel.modelName.startsWith("o")) ||
-          fallbackModel.modelName.includes("extended-thinking");
+    // Add fallback models, but only if not in local mode
+    if (!isLocalMode(config)) {
+      for (const provider of this.config.fallbackOrder) {
+        const fallbackModel = this.getDefaultModelForProvider(provider, task);
+        if (
+          fallbackModel &&
+          (!selectedModelConfig ||
+            fallbackModel.modelName !== selectedModelConfig.modelName)
+        ) {
+          // Check if fallback model is a thinking model
+          const isThinkingModel =
+            (provider === "openai" &&
+              fallbackModel.modelName.startsWith("o")) ||
+            fallbackModel.modelName.includes("extended-thinking");
 
-        const fallbackConfig = {
-          ...fallbackModel,
-          ...(fallbackModel.modelName.includes("gpt-5")
-            ? {
-                max_completion_tokens: baseConfig.maxTokens,
-                temperature: 1,
-              }
-            : {
-                maxTokens: baseConfig.maxTokens,
-                temperature: isThinkingModel
-                  ? undefined
-                  : baseConfig.temperature,
-              }),
-          ...(isThinkingModel
-            ? {
-                thinkingModel: true,
-                thinkingBudgetTokens: THINKING_BUDGET_TOKENS,
-              }
-            : {}),
-        };
-        configs.push(fallbackConfig);
+          const fallbackConfig = {
+            ...fallbackModel,
+            ...(fallbackModel.modelName.includes("gpt-5")
+              ? {
+                  max_completion_tokens: baseConfig.maxTokens,
+                  temperature: 1,
+                }
+              : {
+                  maxTokens: baseConfig.maxTokens,
+                  temperature: isThinkingModel
+                    ? undefined
+                    : baseConfig.temperature,
+                }),
+            ...(isThinkingModel
+              ? {
+                  thinkingModel: true,
+                  thinkingBudgetTokens: THINKING_BUDGET_TOKENS,
+                }
+              : {}),
+          };
+          configs.push(fallbackConfig);
+        }
       }
     }
 

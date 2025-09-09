@@ -1,6 +1,5 @@
 import { AIMessageChunk } from "@langchain/core/messages";
 import { z } from "zod";
-import { BASE_CLASSIFICATION_SCHEMA } from "../nodes/classify-message/schemas.js";
 
 function stripCodeFences(text: string): string {
   // If the model wraps JSON in ```json ... ``` return inner, else return text
@@ -41,7 +40,10 @@ function repairJsonLikeString(s: string): string {
   return t;
 }
 
-export function parseToolCallFromResult(response: AIMessageChunk): {
+export function parseToolCallFromResult(
+  response: AIMessageChunk,
+  schema: z.ZodObject<any>,
+): {
   tool_calls: {
     name: string;
     args: any;
@@ -91,7 +93,7 @@ export function parseToolCallFromResult(response: AIMessageChunk): {
     }
   }
 
-  const safeTool = BASE_CLASSIFICATION_SCHEMA.safeParse(toolCall?.args);
+  const safeTool = schema.safeParse(toolCall?.args);
   let toolArgs;
   if (!safeTool.success) {
     toolArgs = {

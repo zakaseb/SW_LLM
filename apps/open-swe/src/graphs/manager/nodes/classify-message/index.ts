@@ -29,7 +29,6 @@ import {
   formatContentForIssueBody,
 } from "../../../../utils/github/issue-messages.js";
 import { getDefaultHeaders } from "../../../../utils/default-headers.js";
-import { BASE_CLASSIFICATION_SCHEMA } from "./schemas.js";
 import { getPlansFromIssue } from "../../../../utils/github/issue-task.js";
 import { HumanResponse } from "@langchain/langgraph/prebuilt";
 import {
@@ -121,7 +120,7 @@ export async function classifyMessage(
       : {}),
   });
 
-  const response = await modelWithTools.invoke([
+  const rawResponse = await modelWithTools.invoke([
     {
       role: "system",
       content: prompt,
@@ -134,10 +133,35 @@ export async function classifyMessage(
     },
   ]);
 
-  const toolCall = parseToolCallFromResult(response).tool_calls[0];
-  const toolCallArgs = toolCall.args as z.infer<
-    typeof BASE_CLASSIFICATION_SCHEMA
-  >;
+  // 1. Use the robust parser to get a consistent tool_calls structure
+  const response = parseToolCallFromResult(rawResponse, schema);
+  const toolCall = response.tool_calls?.[0];
+
+  let toolCallArgs: z.infer<typeof schema>;
+
+  try {
+    // 2. Parse and validate the arguments against the schema
+    toolCallArgs = schema.parse(toolCall?.args ?? {});
+  } catch (err) {
+    logger.error(
+      `[classify-message] Schema validation failed.`,
+      err,
+    );
+    // 3. Fallback to safe default
+    toolCallArgs = {
+      route: "no_op",
+      response: "The model did not return valid arguments for the tool call.",
+    };
+  }
+
+  // 4. Double-guard the route
+  const validRoutes = schema.shape.route._def.values;
+  if (!validRoutes.includes(toolCallArgs.route)) {
+    logger.warn(
+      `[WARN] Parsed route "${toolCallArgs.route}" is not in the list of valid routes. Falling back to 'no_op'.`,
+    );
+    toolCallArgs.route = "no_op";
+  }
 
   if (toolCallArgs.route === "no_op") {
     // If it's a no_op, just add the message to the state and return.
