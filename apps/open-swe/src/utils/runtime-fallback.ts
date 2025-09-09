@@ -153,7 +153,7 @@ export class FallbackRunnable<
             delete kwargs.parallel_tool_calls;
           }
 
-          if (process.env.LMSTUDIO_BASE_URL) {
+          if (modelConfig.isLMStudio) {
             if (typeof kwargs.tool_choice === "object" && kwargs.tool_choice !== null) {
               kwargs.tool_choice = "required";
             }

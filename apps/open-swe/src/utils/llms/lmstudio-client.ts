@@ -14,15 +14,18 @@ export function getLMStudioClient(
     return null;
   }
 
-  const modelName =
+  const modelStr =
     config.configurable?.[`${task}ModelName`] ??
     TASK_TO_CONFIG_DEFAULTS_MAP[task].modelName;
+
+  const [_provider, ...modelNameParts] = modelStr.split(":");
+  const modelName = modelNameParts.join(":");
 
   return new ChatOpenAI({
     apiKey: process.env.LMSTUDIO_API_KEY ?? "not-needed",
     modelName: modelName,
     configuration: {
-      baseURL: "http://localhost:1234/v1",
+      baseURL: process.env.LMSTUDIO_BASE_URL,
     },
   });
 }
