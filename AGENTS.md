@@ -50,6 +50,16 @@ This is a Yarn workspace monorepo with Turbo build orchestration containing thre
 - Jest with ts-jest for testing framework
 
 **Workspace Structure**: Dependencies are managed on a per-package basis, meaning dependencies should only be installed in their specific app/package. Individual packages reference the shared package via @open-swe/shared workspace dependency.
+
+<local_llm_setup>
+**Using a Local LLM with LM Studio**:
+To run Open-SWE with a local LLM server from LM Studio, you need to configure the following environment variables:
+
+- `LMSTUDIO_BASE_URL`: Set this to the URL of your LM Studio server (e.g., `http://localhost:1234/v1`).
+- `LMSTUDIO_API_KEY`: Set this to your LM Studio API key. If your local server does not require an API key, you can set this to any non-empty string (e.g., "not-needed").
+
+You also need to specify the model to use. The model should be specified in the format `openai/<model-name>`, for example `openai/gpt-oss-20b`. You can configure this in the Open-SWE UI or by setting the appropriate environment variables.
+</local_llm_setup>
 </dependencies_and_installation>
 
 <testing_instructions>

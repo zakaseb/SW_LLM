@@ -116,6 +116,7 @@ export class FallbackRunnable<
         const model = await this.modelManager.initializeModel(
           modelConfig,
           graphConfig,
+          this.task,
         );
         let runnableToUse: Runnable<BaseLanguageModelInput, AIMessageChunk> =
           model;

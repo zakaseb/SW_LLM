@@ -2,6 +2,7 @@ import {
   ConfigurableModel,
   initChatModel,
 } from "langchain/chat_models/universal";
+import { getLMStudioClient } from "./lmstudio-client.js";
 import { GraphConfig } from "@open-swe/shared/open-swe/types";
 import { createLogger, LogLevel } from "../logger.js";
 import {
@@ -105,7 +106,7 @@ export class ModelManager {
    */
   async loadModel(graphConfig: GraphConfig, task: LLMTask) {
     const baseConfig = this.getBaseConfigForTask(graphConfig, task);
-    const model = await this.initializeModel(baseConfig, graphConfig);
+    const model = await this.initializeModel(baseConfig, graphConfig, task);
     return model;
   }
 
@@ -157,7 +158,12 @@ export class ModelManager {
   public async initializeModel(
     config: ModelLoadConfig,
     graphConfig: GraphConfig,
+    task: LLMTask,
   ) {
+    const lmStudioClient = getLMStudioClient(graphConfig, task);
+    if (lmStudioClient) {
+      return lmStudioClient;
+    }
     const {
       provider,
       modelName,
@@ -349,6 +355,17 @@ export class ModelManager {
     const modelName = modelNameParts.join(":");
     if (modelProvider === "openai" && modelName.startsWith("o")) {
       thinkingModel = true;
+    }
+    if (modelProvider === "openai" && modelStr.includes("/")) {
+      const parts = modelStr.split("/");
+      return {
+        modelName: parts[1],
+        provider: "openai",
+        temperature: taskConfig.temperature,
+        maxTokens: config.configurable?.maxTokens ?? 10_000,
+        thinkingModel: false,
+        thinkingBudgetTokens: 0,
+      };
     }
 
     const thinkingBudgetTokens = THINKING_BUDGET_TOKENS;
