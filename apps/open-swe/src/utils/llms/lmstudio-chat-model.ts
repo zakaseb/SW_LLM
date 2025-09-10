@@ -14,6 +14,7 @@ export class LMStudioChatModel extends ChatOpenAI {
     if (newKwargs.tool_choice && typeof newKwargs.tool_choice === "object") {
       newKwargs.tool_choice = "required";
     }
-    return super.bindTools(tools, newKwargs) as this;
+    const toolsArray = Array.isArray(tools) ? tools : [tools];
+    return super.bindTools(toolsArray as any[], newKwargs) as this;
   }
 }
