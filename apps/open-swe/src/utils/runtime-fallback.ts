@@ -153,11 +153,6 @@ export class FallbackRunnable<
             delete kwargs.parallel_tool_calls;
           }
 
-          if (modelConfig.isLMStudio) {
-            if (typeof kwargs.tool_choice === "object" && kwargs.tool_choice !== null) {
-              kwargs.tool_choice = "required";
-            }
-          }
 
           runnableToUse = (runnableToUse as ConfigurableModel).bindTools(
             toolsToUse.tools,

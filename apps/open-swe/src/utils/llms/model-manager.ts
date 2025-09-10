@@ -31,7 +31,6 @@ interface ModelLoadConfig {
   maxTokens?: number;
   thinkingModel?: boolean;
   thinkingBudgetTokens?: number;
-  isLMStudio?: boolean;
 }
 
 export enum CircuitState {
@@ -370,7 +369,6 @@ export class ModelManager {
     }
 
     const thinkingBudgetTokens = THINKING_BUDGET_TOKENS;
-    const isLMStudio = !!process.env.LMSTUDIO_BASE_URL;
 
     return {
       modelName,
@@ -386,7 +384,6 @@ export class ModelManager {
           }),
       thinkingModel,
       thinkingBudgetTokens,
-      isLMStudio,
     };
   }
 

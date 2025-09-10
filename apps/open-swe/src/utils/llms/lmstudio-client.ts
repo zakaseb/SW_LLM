@@ -1,4 +1,4 @@
-import { ChatOpenAI } from "@langchain/openai";
+import { LMStudioChatModel } from "./lmstudio-chat-model.js";
 import {
   LLMTask,
   TASK_TO_CONFIG_DEFAULTS_MAP,
@@ -8,7 +8,7 @@ import { GraphConfig } from "@open-swe/shared/open-swe/types";
 export function getLMStudioClient(
   config: GraphConfig,
   task: LLMTask,
-): ChatOpenAI | null {
+): LMStudioChatModel | null {
   const baseURL = process.env.LMSTUDIO_BASE_URL;
   if (!baseURL) {
     return null;
@@ -21,7 +21,7 @@ export function getLMStudioClient(
   const [_provider, ...modelNameParts] = modelStr.split(":");
   const modelName = modelNameParts.join(":");
 
-  return new ChatOpenAI({
+  return new LMStudioChatModel({
     apiKey: process.env.LMSTUDIO_API_KEY ?? "not-needed",
     modelName: modelName,
     configuration: {
