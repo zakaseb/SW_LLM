@@ -2,9 +2,7 @@ import {
   ConfigurableModel,
   initChatModel,
 } from "langchain/chat_models/universal";
-import { ChatOpenAIFields } from "@langchain/openai";
 import { getLMStudioClient } from "./lmstudio-client.js";
-import { LMStudioChatModel } from "./lmstudio-chat-model.js";
 import { GraphConfig } from "@open-swe/shared/open-swe/types";
 import { createLogger, LogLevel } from "../logger.js";
 import {
@@ -210,24 +208,6 @@ export class ModelManager {
       provider,
       modelName,
     });
-
-    if (provider === "openai") {
-      const fields: ChatOpenAIFields = {
-        modelName,
-        maxRetries: MAX_RETRIES,
-        apiKey: apiKey ?? undefined,
-      };
-
-      if (modelName.includes("gpt-5")) {
-        fields.maxTokens = finalMaxTokens;
-        fields.temperature = 1;
-      } else {
-        fields.maxTokens = finalMaxTokens;
-        fields.temperature = thinkingModel ? undefined : temperature;
-      }
-
-      return new LMStudioChatModel(fields);
-    }
 
     return await initChatModel(modelName, modelOptions);
   }

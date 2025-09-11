@@ -12,15 +12,7 @@ import {
   supportsParallelToolCallsParam,
 } from "../../../../utils/llms/index.js";
 import { LLMTask } from "@open-swe/shared/open-swe/llm-task";
-import {
-  createShellTool,
-  createApplyPatchTool,
-  createRequestHumanHelpToolFields,
-  createUpdatePlanToolFields,
-  createGetURLContentTool,
-  createSearchDocumentForTool,
-  createWriteDefaultTsConfigTool,
-} from "../../../../tools/index.js";
+import { JsonOutputParser } from "@langchain/core/output_parsers";
 import { formatPlanPrompt } from "../../../../utils/plan-prompt.js";
 import { stopSandbox } from "../../../../utils/sandbox.js";
 import { createLogger, LogLevel } from "../../../../utils/logger.js";
@@ -161,106 +153,35 @@ const formatSpecificPlanPrompt = (state: GraphState): HumanMessage => {
   });
 };
 
-async function createToolsAndPrompt(
+function createPromptAndSchema(
   state: GraphState,
-  config: GraphConfig,
-  options: {
-    latestTaskPlan: TaskPlan | null;
-    missingMessages: BaseMessage[];
-  },
-): Promise<{
-  providerTools: Record<Provider, BindToolsInput[]>;
-  providerMessages: Record<Provider, BaseMessageLike[]>;
-}> {
-  const mcpTools = await getMcpTools(config);
-  const sharedTools = [
-    createGrepTool(state, config),
-    createShellTool(state, config),
-    createRequestHumanHelpToolFields(),
-    createUpdatePlanToolFields(),
-    createGetURLContentTool(state),
-    createInstallDependenciesTool(state, config),
-    createMarkTaskCompletedToolFields(),
-    createSearchDocumentForTool(state, config),
-    createWriteDefaultTsConfigTool(state, config),
-    ...mcpTools,
-  ];
+  isAnthropicModel: boolean,
+): {
+  prompt: BaseMessageLike[];
+  schema: z.ZodTypeAny;
+} {
+  const schema = z.object({
+    tool_name: z.string().describe("The name of the tool to call."),
+    tool_args: z.record(z.any()).describe("The arguments for the tool."),
+  });
 
-  logger.info(
-    `MCP tools added to Programmer: ${mcpTools.map((t) => t.name).join(", ")}`,
-  );
-
-  const anthropicModelTools = [
-    ...sharedTools,
-    {
-      type: "text_editor_20250429",
-      name: "str_replace_based_edit_tool",
-      cache_control: { type: "ephemeral" },
-    },
-  ];
-  const nonAnthropicModelTools = [
-    ...sharedTools,
-    {
-      ...createApplyPatchTool(state, config),
-      cache_control: { type: "ephemeral" },
-    },
-  ];
-
-  const inputMessages = filterMessagesWithoutContent([
-    ...state.internalMessages,
-    ...options.missingMessages,
-  ]);
-  if (!inputMessages.length) {
-    throw new Error("No messages to process.");
-  }
-
-  const anthropicMessages = [
+  const messages = [
     {
       role: "system",
       content: formatCacheablePrompt(
+        state,
         {
-          ...state,
-          taskPlan: options.latestTaskPlan ?? state.taskPlan,
-        },
-        {
-          isAnthropicModel: true,
-          excludeCacheControl: false,
+          isAnthropicModel,
         },
       ),
     },
-    ...convertMessagesToCacheControlledMessages(inputMessages),
-    formatSpecificPlanPrompt(state),
-  ];
-
-  const nonAnthropicMessages = [
-    {
-      role: "system",
-      content: formatCacheablePrompt(
-        {
-          ...state,
-          taskPlan: options.latestTaskPlan ?? state.taskPlan,
-        },
-        {
-          isAnthropicModel: false,
-          excludeCacheControl: true,
-        },
-      ),
-    },
-    ...inputMessages,
+    ...filterMessagesWithoutContent(state.internalMessages),
     formatSpecificPlanPrompt(state),
   ];
 
   return {
-    providerTools: {
-      anthropic: anthropicModelTools,
-      openai: nonAnthropicModelTools,
-      "google-genai": nonAnthropicModelTools,
-    },
-    providerMessages: {
-      anthropic: anthropicMessages,
-      openai: nonAnthropicMessages,
-      "google-genai": nonAnthropicMessages,
-    },
+    prompt: messages as BaseMessageLike[],
+    schema,
   };
 }
 
@@ -273,11 +194,6 @@ export async function generateAction(
     config,
     LLMTask.PROGRAMMER,
   );
-  const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
-    config,
-    LLMTask.PROGRAMMER,
-  );
-  const markTaskCompletedTool = createMarkTaskCompletedToolFields();
   const isAnthropicModel = modelName.includes("claude-");
 
   const [missingMessages, { taskPlan: latestTaskPlan }] = await Promise.all([
@@ -285,34 +201,30 @@ export async function generateAction(
     getPlansFromIssue(state, config),
   ]);
 
-  const { providerTools, providerMessages } = await createToolsAndPrompt(
-    state,
-    config,
-    {
-      latestTaskPlan,
-      missingMessages,
-    },
+  const { prompt, schema } = createPromptAndSchema(
+    { ...state, messages: [...state.messages, ...missingMessages] },
+    isAnthropicModel,
   );
 
-  const model = await loadModel(config, LLMTask.PROGRAMMER, {
-    providerTools: providerTools,
-    providerMessages: providerMessages,
+  const model = await loadModel(config, LLMTask.PROGRAMMER);
+  const modelWithJson = model.bind({
+    response_format: { type: "json_object" },
   });
+  const parser = new JsonOutputParser({ zodSchema: schema });
+  const chain = modelWithJson.pipe(parser);
 
-  const modelWithTools = model.bindTools(
-    isAnthropicModel ? providerTools.anthropic : providerTools.openai,
-    {
-      tool_choice: "auto",
-      ...(modelSupportsParallelToolCallsParam
-        ? {
-            parallel_tool_calls: true,
-          }
-        : {}),
-    },
-  );
-  const response = await modelWithTools.invoke(
-    isAnthropicModel ? providerMessages.anthropic : providerMessages.openai,
-  );
+  const responseJson = await chain.invoke(prompt);
+
+  const response = new AIMessage({
+    content: "",
+    tool_calls: [
+      {
+        name: responseJson.tool_name,
+        args: responseJson.tool_args,
+        id: uuidv4(),
+      },
+    ],
+  });
 
   const hasToolCalls = !!response.tool_calls?.length;
   // No tool calls means the graph is going to end. Stop the sandbox.
@@ -320,22 +232,6 @@ export async function generateAction(
   if (!hasToolCalls && state.sandboxSessionId) {
     logger.info("No tool calls found. Stopping sandbox...");
     newSandboxSessionId = await stopSandbox(state.sandboxSessionId);
-  }
-
-  if (
-    response.tool_calls?.length &&
-    response.tool_calls?.length > 1 &&
-    response.tool_calls.some((t) => t.name === markTaskCompletedTool.name)
-  ) {
-    logger.error(
-      `Multiple tool calls found, including ${markTaskCompletedTool.name}. Removing the ${markTaskCompletedTool.name} call.`,
-      {
-        toolCalls: JSON.stringify(response.tool_calls, null, 2),
-      },
-    );
-    response.tool_calls = response.tool_calls.filter(
-      (t) => t.name !== markTaskCompletedTool.name,
-    );
   }
 
   logger.info("Generated action", {

@@ -36,6 +36,14 @@ const FILE_CODE_MANAGEMENT_PROMPT = `<file_and_code_management>
 </file_and_code_management>`;
 
 const TOOL_USE_BEST_PRACTICES_PROMPT = `<tool_usage_best_practices>
+    - Your output should be a JSON object with the following schema:
+    {
+      "tool_name": "The name of the tool to call.",
+      "tool_args": {
+        "arg1": "value1",
+        "arg2": "value2"
+      }
+    }
     - Search: Use the \`grep\` tool for all file searches. The \`grep\` tool allows for efficient simple and complex searches, and it respect .gitignore patterns.
         - When searching for specific file types, use glob patterns
         - The query field supports both basic strings, and regex
@@ -43,7 +51,6 @@ const TOOL_USE_BEST_PRACTICES_PROMPT = `<tool_usage_best_practices>
         - Use the \`install_dependencies\` tool to install dependencies (skip if installation fails). IMPORTANT: You should only call this tool if you're executing a task which REQUIRES installing dependencies. Keep in mind that not all tasks will require installing dependencies.
     - Pre-commit: Run \`pre-commit run --files ...\` if .pre-commit-config.yaml exists
     - History: Use \`git log\` and \`git blame\` for additional context when needed
-    - Parallel Tool Calling: You're allowed, and encouraged to call multiple tools at once, as long as they do not conflict, or depend on each other.
     - URL Content: Use the \`get_url_content\` tool to fetch the contents of a URL. You should only use this tool to fetch the contents of a URL the user has provided, or that you've discovered during your context searching, which you believe is vital to gathering context for the user's request.
     - Scripts may require dependencies to be installed: Remember that sometimes scripts may require dependencies to be installed before they can be run.
         - Always ensure you've installed dependencies before running a script which might require them.
