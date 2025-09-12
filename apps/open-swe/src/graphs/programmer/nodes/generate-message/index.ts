@@ -12,7 +12,7 @@ import {
   supportsParallelToolCallsParam,
 } from "../../../../utils/llms/index.js";
 import { LLMTask } from "@open-swe/shared/open-swe/llm-task";
-import { JsonOutputParser } from "@langchain/core/output_parsers";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { formatPlanPrompt } from "../../../../utils/plan-prompt.js";
 import { stopSandbox } from "../../../../utils/sandbox.js";
 import { createLogger, LogLevel } from "../../../../utils/logger.js";
@@ -207,13 +207,19 @@ export async function generateAction(
   );
 
   const model = await loadModel(config, LLMTask.PROGRAMMER);
+  const jsonSchema = zodToJsonSchema(schema);
   const modelWithJson = model.bind({
-    response_format: { type: "json_object" },
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "generate_action",
+        strict: true,
+        schema: jsonSchema,
+      },
+    },
   });
-  const parser = new JsonOutputParser({ zodSchema: schema });
-  const chain = modelWithJson.pipe(parser);
 
-  const responseJson = await chain.invoke(prompt);
+  const responseJson = await modelWithJson.invoke(prompt);
 
   const response = new AIMessage({
     content: "",

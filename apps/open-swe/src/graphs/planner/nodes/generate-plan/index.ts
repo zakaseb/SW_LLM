@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { isAIMessage, ToolMessage } from "@langchain/core/messages";
-import { JsonOutputParser } from "@langchain/core/output_parsers";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { GraphConfig } from "@open-swe/shared/open-swe/types";
 import {
   loadModel,
@@ -66,15 +66,23 @@ export async function generatePlan(
     title: z.string().describe("The title of the session plan."),
     plan: z.array(z.string()).describe("The steps of the session plan."),
   });
+  const jsonSchema = zodToJsonSchema(schema);
   const modelWithJson = model.bind({
-    response_format: { type: "json_object" },
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "session_plan",
+        strict: true,
+        schema: jsonSchema,
+      },
+    },
   });
-  const parser = new JsonOutputParser({ zodSchema: schema });
-  const chain = modelWithJson.pipe(parser);
 
-  const response = await chain.invoke(formatSystemPrompt(state));
+  const response = await modelWithJson
+    .withConfig({ tags: ["nostream"] })
+    .invoke(formatSystemPrompt(state));
 
-  const proposedPlanArgs = response;
+  const proposedPlanArgs = JSON.parse(response.content as string);
 
   let newSessionId: string | undefined;
   if (state.sandboxSessionId && !isLocalMode(config)) {

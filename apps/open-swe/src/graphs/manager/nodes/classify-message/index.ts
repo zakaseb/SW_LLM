@@ -38,8 +38,8 @@ import {
   PLANNER_GRAPH_ID,
 } from "@open-swe/shared/constants";
 import { createLogger, LogLevel } from "../../../../utils/logger.js";
-import { createClassificationPromptAndSchema } from "./utils.js";
-import { JsonOutputParser } from "@langchain/core/output_parsers";
+import { createClassificationPromptAndToolSchema } from "./utils.js";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { RequestSource } from "../../../../constants.js";
 import { StreamMode, Thread } from "@langchain/langgraph-sdk";
 import { isLocalMode } from "@open-swe/shared/open-swe/local-mode";
@@ -93,7 +93,7 @@ export async function classifyMessage(
     : null;
   const taskPlan = issuePlans?.taskPlan ?? state.taskPlan;
 
-  const { prompt, schema } = createClassificationPromptAndSchema({
+  const { prompt, schema } = createClassificationPromptAndToolSchema({
     programmerStatus,
     plannerStatus,
     messages: state.messages,
@@ -104,36 +104,37 @@ export async function classifyMessage(
       | undefined,
   });
   const model = await loadModel(config, LLMTask.ROUTER);
+  const jsonSchema = zodToJsonSchema(schema);
   const modelWithJson = model.bind({
-    response_format: { type: "json_object" },
-  });
-  const parser = new JsonOutputParser({ zodSchema: schema });
-  const chain = modelWithJson.pipe(parser);
-
-  const response = await chain.invoke(
-    [
-      {
-        role: "system",
-        content: prompt,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "respond_and_route",
+        strict: true,
+        schema: jsonSchema,
       },
-      {
-        role: "user",
-        content: extractContentWithoutDetailsFromIssueBody(
-          getMessageContentString(userMessage.content),
-        ),
-      },
-    ],
-    {
-      response_format: { type: "json_object" },
     },
-  );
+  });
 
-  const toolCallArgs = response;
+  const response = await modelWithJson.invoke([
+    {
+      role: "system",
+      content: prompt,
+    },
+    {
+      role: "user",
+      content: extractContentWithoutDetailsFromIssueBody(
+        getMessageContentString(userMessage.content),
+      ),
+    },
+  ]);
+
+  const toolCallArgs = JSON.parse(response.content as string);
 
   if (toolCallArgs.route === "no_op") {
     // If it's a no_op, just add the message to the state and return.
     const commandUpdate: ManagerGraphUpdate = {
-      messages: [new AIMessage({ content: toolCallArgs.response })],
+      messages: [response],
     };
     return new Command({
       update: commandUpdate,
@@ -144,7 +145,7 @@ export async function classifyMessage(
   if ((toolCallArgs.route as string) === "create_new_issue") {
     // Route to node which kicks off new manager run, passing in the full conversation history.
     const commandUpdate: ManagerGraphUpdate = {
-      messages: [new AIMessage({ content: toolCallArgs.response })],
+      messages: [response],
     };
     return new Command({
       update: commandUpdate,
@@ -154,9 +155,7 @@ export async function classifyMessage(
 
   if (isLocalMode(config)) {
     // In local mode, just route to planner without GitHub issue creation
-    const newMessages: BaseMessage[] = [
-      new AIMessage({ content: toolCallArgs.response }),
-    ];
+    const newMessages: BaseMessage[] = [response];
     const commandUpdate: ManagerGraphUpdate = {
       messages: newMessages,
     };
@@ -179,9 +178,7 @@ export async function classifyMessage(
   const { githubAccessToken } = getGitHubTokensFromConfig(config);
   let githubIssueId = state.githubIssueId;
 
-  const newMessages: BaseMessage[] = [
-    new AIMessage({ content: toolCallArgs.response }),
-  ];
+  const newMessages: BaseMessage[] = [response];
 
   // If it's not a no_op, ensure there is a GitHub issue with the user's request.
   if (!githubIssueId) {

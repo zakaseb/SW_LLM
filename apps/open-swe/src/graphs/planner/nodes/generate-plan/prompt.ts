@@ -58,14 +58,7 @@ ${GITHUB_WORKFLOWS_PERMISSIONS_PROMPT}
 </instructions>
 
 <output_format>
-Your output should be a JSON object with the following schema:
-{
-  "title": "A short, concise title for the session plan.",
-  "plan": [
-    "A list of plan items, where each item is a string.",
-    "Each plan item should be a complete, self-contained action that can be executed without referring back to this conversation."
-  ]
-}
+When ready, call the 'session_plan' tool with your plan. Each plan item should be a complete, self-contained action that can be executed without referring back to this conversation.
 
 Structure your plan items as clear directives, for example:
 - "Implement function X in file Y that performs Z using the existing pattern from file A"

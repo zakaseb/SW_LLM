@@ -67,7 +67,7 @@ function formatMessageForClassification(message: BaseMessage): string {
   return getUnknownMessageString(message);
 }
 
-export function createClassificationPromptAndSchema(inputs: {
+export function createClassificationPromptAndToolSchema(inputs: {
   programmerStatus: ThreadStatus | "not_started";
   plannerStatus: ThreadStatus | "not_started";
   messages: BaseMessage[];
