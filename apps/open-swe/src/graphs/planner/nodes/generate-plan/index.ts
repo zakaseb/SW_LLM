@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { isAIMessage, ToolMessage } from "@langchain/core/messages";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { createSessionPlanToolFields } from "../../../../tools/index.js";
 import { GraphConfig } from "@open-swe/shared/open-swe/types";
 import {
   loadModel,
@@ -62,27 +62,66 @@ export async function generatePlan(
     config,
     LLMTask.PLANNER,
   );
-  const schema = z.object({
-    title: z.string().describe("The title of the session plan."),
-    plan: z.array(z.string()).describe("The steps of the session plan."),
-  });
-  const jsonSchema = zodToJsonSchema(schema);
-  const modelWithJson = model.bind({
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "session_plan",
-        strict: true,
-        schema: jsonSchema,
-      },
-    },
+  const sessionPlanTool = createSessionPlanToolFields();
+  const modelWithTools = model.bindTools([sessionPlanTool], {
+    tool_choice: sessionPlanTool.name,
+    ...(modelSupportsParallelToolCallsParam
+      ? {
+          parallel_tool_calls: false,
+        }
+      : {}),
   });
 
-  const response = await modelWithJson
+  let optionalToolMessage: ToolMessage | undefined;
+  const lastMessage = state.messages[state.messages.length - 1];
+  if (isAIMessage(lastMessage) && lastMessage.tool_calls?.[0]) {
+    const lastMessageToolCall = lastMessage.tool_calls?.[0];
+    optionalToolMessage = new ToolMessage({
+      id: uuidv4(),
+      tool_call_id: lastMessageToolCall.id ?? "",
+      name: lastMessageToolCall.name,
+      content: "Tool call not executed. Max actions reached.",
+    });
+  }
+
+  const inputMessages = filterMessagesWithoutContent([
+    ...state.messages,
+    ...(optionalToolMessage ? [optionalToolMessage] : []),
+  ]);
+  if (!inputMessages.length) {
+    throw new Error("No messages to process.");
+  }
+
+  const response = await modelWithTools
     .withConfig({ tags: ["nostream"] })
-    .invoke(formatSystemPrompt(state));
+    .invoke([
+      {
+        role: "system",
+        content: formatSystemPrompt(state),
+      },
+      ...inputMessages,
+    ]);
 
-  const proposedPlanArgs = JSON.parse(response.content as string);
+  // Filter out empty plans
+  response.tool_calls = response.tool_calls?.map((tc) => {
+    if (tc.id === sessionPlanTool.name) {
+      return {
+        ...tc,
+        args: {
+          ...tc.args,
+          plan: (tc.args as z.infer<typeof sessionPlanTool.schema>).plan.filter(
+            (p) => p.length > 0,
+          ),
+        },
+      };
+    }
+    return tc;
+  });
+
+  const toolCall = response.tool_calls?.[0];
+  if (!toolCall) {
+    throw new Error("Failed to generate plan");
+  }
 
   let newSessionId: string | undefined;
   if (state.sandboxSessionId && !isLocalMode(config)) {
@@ -90,8 +129,19 @@ export async function generatePlan(
     newSessionId = await stopSandbox(state.sandboxSessionId);
   }
 
+  const proposedPlanArgs = toolCall.args as z.infer<
+    typeof sessionPlanTool.schema
+  >;
+
+  const toolResponse = new ToolMessage({
+    id: `${DO_NOT_RENDER_ID_PREFIX}${uuidv4()}`,
+    tool_call_id: toolCall.id ?? "",
+    content: "Successfully saved plan.",
+    name: sessionPlanTool.name,
+  });
+
   return {
-    messages: [],
+    messages: [response, toolResponse],
     proposedPlanTitle: proposedPlanArgs.title,
     proposedPlan: proposedPlanArgs.plan,
     ...(newSessionId && { sandboxSessionId: newSessionId }),

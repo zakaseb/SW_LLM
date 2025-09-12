@@ -39,7 +39,6 @@ import {
 } from "@open-swe/shared/constants";
 import { createLogger, LogLevel } from "../../../../utils/logger.js";
 import { createClassificationPromptAndToolSchema } from "./utils.js";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { RequestSource } from "../../../../constants.js";
 import { StreamMode, Thread } from "@langchain/langgraph-sdk";
 import { isLocalMode } from "@open-swe/shared/open-swe/local-mode";
@@ -103,20 +102,26 @@ export async function classifyMessage(
       | RequestSource
       | undefined,
   });
+  const respondAndRouteTool = {
+    name: "respond_and_route",
+    description: "Respond to the user's message and determine how to route it.",
+    schema,
+  };
   const model = await loadModel(config, LLMTask.ROUTER);
-  const jsonSchema = zodToJsonSchema(schema);
-  const modelWithJson = model.bind({
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "respond_and_route",
-        strict: true,
-        schema: jsonSchema,
-      },
-    },
+  const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
+    config,
+    LLMTask.ROUTER,
+  );
+  const modelWithTools = model.bindTools([respondAndRouteTool], {
+    tool_choice: respondAndRouteTool.name,
+    ...(modelSupportsParallelToolCallsParam
+      ? {
+          parallel_tool_calls: false,
+        }
+      : {}),
   });
 
-  const response = await modelWithJson.invoke([
+  const response = await modelWithTools.invoke([
     {
       role: "system",
       content: prompt,
@@ -129,7 +134,13 @@ export async function classifyMessage(
     },
   ]);
 
-  const toolCallArgs = JSON.parse(response.content as string);
+  const toolCall = response.tool_calls?.[0];
+  if (!toolCall) {
+    throw new Error("No tool call found.");
+  }
+  const toolCallArgs = toolCall.args as z.infer<
+    typeof BASE_CLASSIFICATION_SCHEMA
+  >;
 
   if (toolCallArgs.route === "no_op") {
     // If it's a no_op, just add the message to the state and return.
