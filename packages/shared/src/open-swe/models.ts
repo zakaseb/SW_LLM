@@ -1,4 +1,8 @@
 export const MODEL_OPTIONS = [
+  {
+    label: "AnythingLLM (Local)",
+    value: "anythingllm:local-model",
+  },
   // TODO: Test these then re-enable
   // {
   //   label: "Claude Sonnet 4 (Extended Thinking)",

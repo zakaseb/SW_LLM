@@ -47,6 +47,7 @@ export const PROVIDER_FALLBACK_ORDER = [
   "openai",
   "anthropic",
   "google-genai",
+  "anythingllm",
 ] as const;
 export type Provider = (typeof PROVIDER_FALLBACK_ORDER)[number];
 
@@ -82,6 +83,8 @@ const providerToApiKey = (
       return apiKeys.anthropicApiKey;
     case "google-genai":
       return apiKeys.googleApiKey;
+    case "anythingllm":
+      return ""; // No API key needed for local server
     default:
       throw new Error(`Unknown provider: ${providerName}`);
   }
@@ -179,9 +182,12 @@ export class ModelManager {
     const apiKey = this.getUserApiKey(graphConfig, provider);
 
     const modelOptions: InitChatModelArgs = {
-      modelProvider: provider,
+      modelProvider: provider === "anythingllm" ? "openai" : provider,
       max_retries: MAX_RETRIES,
       ...(apiKey ? { apiKey } : {}),
+      ...(provider === "anythingllm"
+        ? { baseURL: "http://127.0.0.1:1234/v1" }
+        : {}),
       ...(thinkingModel && provider === "anthropic"
         ? {
             thinking: { budget_tokens: thinkingBudgetTokens, type: "enabled" },
@@ -398,6 +404,13 @@ export class ModelManager {
         [LLMTask.REVIEWER]: "gpt-5",
         [LLMTask.ROUTER]: "gpt-5-nano",
         [LLMTask.SUMMARIZER]: "gpt-5-mini",
+      },
+      anythingllm: {
+        [LLMTask.PLANNER]: "local-model",
+        [LLMTask.PROGRAMMER]: "local-model",
+        [LLMTask.REVIEWER]: "local-model",
+        [LLMTask.ROUTER]: "local-model",
+        [LLMTask.SUMMARIZER]: "local-model",
       },
     };
 
