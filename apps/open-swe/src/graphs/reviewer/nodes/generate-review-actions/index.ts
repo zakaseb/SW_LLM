@@ -175,11 +175,13 @@ function createToolsAndPrompt(
       anthropic: anthropicTools,
       openai: nonAnthropicTools,
       "google-genai": nonAnthropicTools,
+      anythingllm: nonAnthropicTools,
     },
     providerMessages: {
       anthropic: anthropicMessages,
       openai: nonAnthropicMessages,
       "google-genai": nonAnthropicMessages,
+      anythingllm: nonAnthropicMessages,
     },
   };
 }
