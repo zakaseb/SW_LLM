@@ -25,7 +25,9 @@
     "@langchain/langgraph-sdk": "^0.0.95",
     "@langchain/core": "^0.3.65",
     "langsmith": "^0.3.48",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "packageManager": "yarn@3.5.1"
 }

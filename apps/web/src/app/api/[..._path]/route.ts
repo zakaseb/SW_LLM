@@ -12,6 +12,7 @@ import {
   getGitHubAccessTokenOrThrow,
 } from "./utils";
 import { encryptSecret } from "@open-swe/shared/crypto";
+import { isLocalModeFromEnv } from "@open-swe/shared/open-swe/local-mode";
 
 // This file acts as a proxy for requests to your LangGraph server.
 // Read the [Going to Production](https://github.com/langchain-ai/agent-chat-ui?tab=readme-ov-file#going-to-production) section for more information.
@@ -49,6 +50,14 @@ export const { GET, POST, PUT, PATCH, DELETE, OPTIONS, runtime } =
       return body;
     },
     headers: async (req) => {
+      if (isLocalModeFromEnv()) {
+        return {
+          [GITHUB_TOKEN_COOKIE]: "local",
+          [GITHUB_INSTALLATION_TOKEN_COOKIE]: "local",
+          [GITHUB_INSTALLATION_NAME]: "local",
+          [GITHUB_INSTALLATION_ID]: "local",
+        };
+      }
       const encryptionKey = process.env.SECRETS_ENCRYPTION_KEY;
       if (!encryptionKey) {
         throw new Error(
