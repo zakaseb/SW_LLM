@@ -84,7 +84,7 @@ const providerToApiKey = (
     case "google-genai":
       return apiKeys.googleApiKey;
     case "anythingllm":
-      return ""; // No API key needed for local server
+      return "no-key"; // API key is required but not validated
     default:
       throw new Error(`Unknown provider: ${providerName}`);
   }
