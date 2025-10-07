@@ -56,6 +56,7 @@ export const { GET, POST, PUT, PATCH, DELETE, OPTIONS, runtime } =
           [GITHUB_INSTALLATION_TOKEN_COOKIE]: "local",
           [GITHUB_INSTALLATION_NAME]: "local",
           [GITHUB_INSTALLATION_ID]: "local",
+          "x-local-mode": "true",
         };
       }
       const encryptionKey = process.env.SECRETS_ENCRYPTION_KEY;

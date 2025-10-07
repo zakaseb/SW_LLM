@@ -7,7 +7,6 @@ import {
   LLMTask,
   TASK_TO_CONFIG_DEFAULTS_MAP,
 } from "@open-swe/shared/open-swe/llm-task";
-import { isLocalMode } from "@open-swe/shared/open-swe/local-mode";
 
 export async function loadModel(
   config: GraphConfig,
@@ -23,12 +22,6 @@ export async function loadModel(
   if (!model) {
     throw new Error(`Model loading returned undefined for task: ${task}`);
   }
-
-  // In local mode, we don't need the fallback mechanism.
-  if (isLocalMode(config)) {
-    return model;
-  }
-
   const fallbackModel = new FallbackRunnable(
     model,
     config,

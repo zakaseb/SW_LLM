@@ -1,6 +1,6 @@
 export const MODEL_OPTIONS = [
   {
-    label: "AnythingLLM (Local)",
+    label: "LM Studio (Local)",
     value: "anythingllm:local-model",
   },
   // TODO: Test these then re-enable

@@ -5,8 +5,11 @@ import { GraphConfig } from "@open-swe/shared/open-swe/types";
  * (working on local files instead of sandbox/Daytona)
  */
 export function isLocalMode(config?: GraphConfig): boolean {
+  if (isLocalModeFromEnv()) {
+    return true;
+  }
   if (!config) {
-    return isLocalModeFromEnv();
+    return false;
   }
   return (config.configurable as any)?.["x-local-mode"] === "true";
 }
