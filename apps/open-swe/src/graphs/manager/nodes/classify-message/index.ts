@@ -11,11 +11,7 @@ import {
   RemoveMessage,
 } from "@langchain/core/messages";
 import { z } from "zod";
-import {
-  loadModel,
-  supportsParallelToolCallsParam,
-} from "../../../../utils/llms/index.js";
-import { LLMTask } from "@open-swe/shared/open-swe/llm-task";
+import { LocalLLM } from "../../../../utils/local-llm.js";
 import { Command, END } from "@langchain/langgraph";
 import { getMessageContentString } from "@open-swe/shared/messages";
 import {
@@ -107,18 +103,9 @@ export async function classifyMessage(
     description: "Respond to the user's message and determine how to route it.",
     schema,
   };
-  const model = await loadModel(config, LLMTask.ROUTER);
-  const modelSupportsParallelToolCallsParam = supportsParallelToolCallsParam(
-    config,
-    LLMTask.ROUTER,
-  );
-  const modelWithTools = model.bindTools([respondAndRouteTool], {
+  const modelWithTools = LocalLLM.bindTools([respondAndRouteTool], {
     tool_choice: respondAndRouteTool.name,
-    ...(modelSupportsParallelToolCallsParam
-      ? {
-          parallel_tool_calls: false,
-        }
-      : {}),
+    parallel_tool_calls: false,
   });
 
   const response = await modelWithTools.invoke([

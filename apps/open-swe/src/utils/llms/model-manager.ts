@@ -180,11 +180,19 @@ export class ModelManager {
     }
 
     const apiKey = this.getUserApiKey(graphConfig, provider);
+    const useLmStudio = provider === "openai" && process.env.OPENAI_API_BASE;
 
     const modelOptions: InitChatModelArgs = {
-      modelProvider: provider === "anythingllm" ? "openai" : provider,
+      modelProvider:
+        provider === "anythingllm" || useLmStudio ? "openai" : provider,
       max_retries: MAX_RETRIES,
-      ...(apiKey ? { apiKey } : {}),
+      ...(apiKey && !useLmStudio ? { apiKey } : {}),
+      ...(useLmStudio
+        ? {
+            baseURL: process.env.OPENAI_API_BASE,
+            apiKey: process.env.OPENAI_API_KEY ?? "lmstudio-local",
+          }
+        : {}),
       ...(provider === "anythingllm"
         ? { baseURL: "http://127.0.0.1:1234/v1" }
         : {}),
@@ -254,6 +262,10 @@ export class ModelManager {
       }
     }
 
+    // If we're using a local model, don't add any fallbacks.
+    if (process.env.OPENAI_API_BASE) {
+      return configs;
+    }
     // Add fallback models
     for (const provider of this.config.fallbackOrder) {
       const fallbackModel = this.getDefaultModelForProvider(provider, task);
