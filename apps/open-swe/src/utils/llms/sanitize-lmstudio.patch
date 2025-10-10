@@ -1,0 +1,76 @@
+diff --git a/apps/open-swe/src/models/LMStudioChatModel.ts b/apps/open-swe/src/models/LMStudioChatModel.ts
+index abcdef1..1234567 100644
+--- a/apps/open-swe/src/models/LMStudioChatModel.ts
++++ b/apps/open-swe/src/models/LMStudioChatModel.ts
+@@
+ export class LMStudioChatModel {
+   private client: any;
+   private modelName: string;
+
+   constructor(client: any, modelName: string) {
+     this.client = client;
+     this.modelName = modelName;
+   }
+
++  /**
++   * Sanitize payload for LM Studio, converting unsupported fields
++   * (tool_choice as object, response_format as object, functions array).
++   */
++  private sanitizePayload(payload: any) {
++    // 1) Sanitize tool_choice
++    if (payload.tool_choice && typeof payload.tool_choice === "object") {
++      const tc = payload.tool_choice;
++      if (typeof tc.type === "string" && ["none","auto","required"].includes(tc.type)) {
++        payload.tool_choice = tc.type;
++      } else if (typeof tc.name === "string" && ["none","auto","required"].includes(tc.name)) {
++        payload.tool_choice = tc.name;
++      } else if (tc.required === true) {
++        payload.tool_choice = "required";
++      } else {
++        payload.tool_choice = "auto";
++      }
++    }
++
++    // 2) Sanitize response_format
++    if (payload.response_format && typeof payload.response_format === "object") {
++      const rf = payload.response_format;
++      if (!(rf.type === "json_schema" || rf.type === "text")) {
++        payload.response_format = {
++          type: "json_schema",
++          json_schema: {
++            name: rf.name ?? "structured_output",
++            strict: true,
++            schema: rf.schema ?? rf,
++          },
++        };
++      }
++    }
++
++    // 3) Remove unsupported fields
++    if (payload.functions) {
++      delete payload.functions;
++    }
++
++    return payload;
++  }
++
+   async call(messages: any[], options: any = {}) {
+-    const payload = {
++    let payload: any = {
+       model: this.modelName,
+       messages,
+       tools: options.tools,
+       tool_choice: options.tool_choice,
+       response_format: options.response_format,
+       temperature: options.temperature ?? 0.0,
+     };
+
+-    const response = await this.client.chat.completions.create(payload);
++    const finalPayload = this.sanitizePayload(payload);
++    if (process.env.DEBUG_LMSTUDIO === "1") {
++      console.debug("[LMStudio] final payload:", JSON.stringify(finalPayload, null, 2));
++    }
++    const response = await this.client.chat.completions.create(finalPayload);
+     return response;
+   }
+ }

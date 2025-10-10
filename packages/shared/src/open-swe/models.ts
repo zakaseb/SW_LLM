@@ -1,7 +1,7 @@
 export const MODEL_OPTIONS = [
   {
     label: "LM Studio (Local)",
-    value: "anythingllm:local-model",
+    value: "openai:local-model",
   },
   // TODO: Test these then re-enable
   // {

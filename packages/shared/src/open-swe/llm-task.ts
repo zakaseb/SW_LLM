@@ -29,23 +29,23 @@ export enum LLMTask {
 
 export const TASK_TO_CONFIG_DEFAULTS_MAP = {
   [LLMTask.PLANNER]: {
-    modelName: "anythingllm:local-model",
+    modelName: "openai:local-model",
     temperature: 0,
   },
   [LLMTask.PROGRAMMER]: {
-    modelName: "anythingllm:local-model",
+    modelName: "openai:local-model",
     temperature: 0,
   },
   [LLMTask.REVIEWER]: {
-    modelName: "anythingllm:local-model",
+    modelName: "openai:local-model",
     temperature: 0,
   },
   [LLMTask.ROUTER]: {
-    modelName: "anythingllm:local-model",
+    modelName: "openai:local-model",
     temperature: 0,
   },
   [LLMTask.SUMMARIZER]: {
-    modelName: "anythingllm:local-model",
+    modelName: "openai:local-model",
     temperature: 0,
   },
 };

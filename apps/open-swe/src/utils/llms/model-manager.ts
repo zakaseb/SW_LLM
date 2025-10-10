@@ -116,6 +116,10 @@ export class ModelManager {
     graphConfig: GraphConfig,
     provider: Provider,
   ): string | null {
+    // In fully local mode, do not require API keys
+    if (process.env.OPENAI_API_BASE || provider === "anythingllm") {
+      return null;
+    }
     const userLogin = (graphConfig.configurable as any)?.langgraph_auth_user
       ?.display_name;
     const secretsEncryptionKey = process.env.SECRETS_ENCRYPTION_KEY;
@@ -179,8 +183,8 @@ export class ModelManager {
       finalMaxTokens = finalMaxTokens > 8_192 ? 8_192 : finalMaxTokens;
     }
 
+    const useLmStudio = provider === "openai" && !!process.env.OPENAI_API_BASE;
     const apiKey = this.getUserApiKey(graphConfig, provider);
-    const useLmStudio = provider === "openai" && process.env.OPENAI_API_BASE;
 
     const modelOptions: InitChatModelArgs = {
       modelProvider:
@@ -193,9 +197,8 @@ export class ModelManager {
             apiKey: process.env.OPENAI_API_KEY ?? "lmstudio-local",
           }
         : {}),
-      ...(provider === "anythingllm"
-        ? { baseURL: "http://127.0.0.1:1234/v1" }
-        : {}),
+      // "openai:local-model" is resolved by useLmStudio branch above; keep legacy mapping for safety
+      ...(provider === "anythingllm" ? { baseURL: "http://127.0.0.1:1234/v1" } : {}),
       ...(thinkingModel && provider === "anthropic"
         ? {
             thinking: { budget_tokens: thinkingBudgetTokens, type: "enabled" },
