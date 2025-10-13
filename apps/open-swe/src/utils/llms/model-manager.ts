@@ -47,6 +47,7 @@ export const PROVIDER_FALLBACK_ORDER = [
   "openai",
   "anthropic",
   "google-genai",
+  "lmstudio",
 ] as const;
 export type Provider = (typeof PROVIDER_FALLBACK_ORDER)[number];
 
@@ -82,6 +83,8 @@ const providerToApiKey = (
       return apiKeys.anthropicApiKey;
     case "google-genai":
       return apiKeys.googleApiKey;
+    case "lmstudio":
+      return "lm-studio";
     default:
       throw new Error(`Unknown provider: ${providerName}`);
   }
@@ -113,6 +116,10 @@ export class ModelManager {
     graphConfig: GraphConfig,
     provider: Provider,
   ): string | null {
+    if (provider === "lmstudio") {
+      return "lm-studio";
+    }
+
     const userLogin = (graphConfig.configurable as any)?.langgraph_auth_user
       ?.display_name;
     const secretsEncryptionKey = process.env.SECRETS_ENCRYPTION_KEY;
@@ -178,10 +185,18 @@ export class ModelManager {
 
     const apiKey = this.getUserApiKey(graphConfig, provider);
 
+    const isLmStudio = provider === "lmstudio";
+    const lmStudioBaseUrl = process.env.LM_STUDIO_BASE_URL || "http://127.0.0.1:1234/v1";
+
     const modelOptions: InitChatModelArgs = {
-      modelProvider: provider,
+      modelProvider: isLmStudio ? "openai" : provider,
       max_retries: MAX_RETRIES,
       ...(apiKey ? { apiKey } : {}),
+      ...(isLmStudio ? {
+        configuration: {
+          baseURL: lmStudioBaseUrl,
+        },
+      } : {}),
       ...(thinkingModel && provider === "anthropic"
         ? {
             thinking: { budget_tokens: thinkingBudgetTokens, type: "enabled" },
@@ -201,6 +216,7 @@ export class ModelManager {
     logger.debug("Initializing model", {
       provider,
       modelName,
+      ...(isLmStudio ? { baseURL: lmStudioBaseUrl } : {}),
     });
 
     return await initChatModel(modelName, modelOptions);
@@ -377,6 +393,8 @@ export class ModelManager {
     provider: Provider,
     task: LLMTask,
   ): ModelLoadConfig | null {
+    const lmStudioModelName = process.env.LM_STUDIO_MODEL_NAME || "lmstudio-local";
+    
     const defaultModels: Record<Provider, Record<LLMTask, string>> = {
       anthropic: {
         [LLMTask.PLANNER]: "claude-sonnet-4-0",
@@ -398,6 +416,13 @@ export class ModelManager {
         [LLMTask.REVIEWER]: "gpt-5",
         [LLMTask.ROUTER]: "gpt-5-nano",
         [LLMTask.SUMMARIZER]: "gpt-5-mini",
+      },
+      lmstudio: {
+        [LLMTask.PLANNER]: lmStudioModelName,
+        [LLMTask.PROGRAMMER]: lmStudioModelName,
+        [LLMTask.REVIEWER]: lmStudioModelName,
+        [LLMTask.ROUTER]: lmStudioModelName,
+        [LLMTask.SUMMARIZER]: lmStudioModelName,
       },
     };
 

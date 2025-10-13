@@ -27,25 +27,28 @@ export enum LLMTask {
   SUMMARIZER = "summarizer",
 }
 
+const USE_LM_STUDIO = process.env.USE_LM_STUDIO === "true";
+const LM_STUDIO_MODEL = process.env.LM_STUDIO_MODEL_NAME || "lmstudio-local";
+
 export const TASK_TO_CONFIG_DEFAULTS_MAP = {
   [LLMTask.PLANNER]: {
-    modelName: "anthropic:claude-sonnet-4-0",
+    modelName: USE_LM_STUDIO ? `lmstudio:${LM_STUDIO_MODEL}` : "anthropic:claude-sonnet-4-0",
     temperature: 0,
   },
   [LLMTask.PROGRAMMER]: {
-    modelName: "anthropic:claude-sonnet-4-0",
+    modelName: USE_LM_STUDIO ? `lmstudio:${LM_STUDIO_MODEL}` : "anthropic:claude-sonnet-4-0",
     temperature: 0,
   },
   [LLMTask.REVIEWER]: {
-    modelName: "anthropic:claude-sonnet-4-0",
+    modelName: USE_LM_STUDIO ? `lmstudio:${LM_STUDIO_MODEL}` : "anthropic:claude-sonnet-4-0",
     temperature: 0,
   },
   [LLMTask.ROUTER]: {
-    modelName: "anthropic:claude-3-5-haiku-latest",
+    modelName: USE_LM_STUDIO ? `lmstudio:${LM_STUDIO_MODEL}` : "anthropic:claude-3-5-haiku-latest",
     temperature: 0,
   },
   [LLMTask.SUMMARIZER]: {
-    modelName: "anthropic:claude-3-5-haiku-latest",
+    modelName: USE_LM_STUDIO ? `lmstudio:${LM_STUDIO_MODEL}` : "anthropic:claude-3-5-haiku-latest",
     temperature: 0,
   },
 };

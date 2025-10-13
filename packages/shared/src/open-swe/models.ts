@@ -84,9 +84,13 @@ export const MODEL_OPTIONS = [
     label: "Gemini 2.5 Flash",
     value: "google-genai:gemini-2.5-flash",
   },
+  {
+    label: "LM Studio Local",
+    value: "lmstudio:lmstudio-local",
+  },
 ];
 
 export const MODEL_OPTIONS_NO_THINKING = MODEL_OPTIONS.filter(
   ({ value }) =>
-    !value.includes("extended-thinking") || !value.startsWith("openai:o"),
+    !value.includes("extended-thinking") && !value.startsWith("openai:o"),
 );

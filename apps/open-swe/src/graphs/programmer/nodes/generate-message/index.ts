@@ -255,11 +255,13 @@ async function createToolsAndPrompt(
       anthropic: anthropicModelTools,
       openai: nonAnthropicModelTools,
       "google-genai": nonAnthropicModelTools,
+      lmstudio: nonAnthropicModelTools,
     },
     providerMessages: {
       anthropic: anthropicMessages,
       openai: nonAnthropicMessages,
       "google-genai": nonAnthropicMessages,
+      lmstudio: nonAnthropicMessages,
     },
   };
 }

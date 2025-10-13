@@ -125,6 +125,19 @@ export function APIKeysTab() {
           <p>Only an Anthropic API key is required to get started.</p>
         </AlertDescription>
       </Alert>
+
+      <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
+        <Info className="h-4 w-4 text-green-600 dark:text-green-400" />
+        <AlertDescription className="text-green-800 dark:text-green-300">
+          <p className="font-semibold">Using LM Studio for local inference?</p>
+          <p className="mt-1">
+            No API keys required! Select &quot;LM Studio Local&quot; from any model dropdown 
+            in the Configuration tab. Make sure LM Studio is running with a model loaded 
+            at http://127.0.0.1:1234
+          </p>
+        </AlertDescription>
+      </Alert>
+
       {Object.entries(apiKeySections).map(([sectionKey, section]) => (
         <Card
           key={sectionKey}

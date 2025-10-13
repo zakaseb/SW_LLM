@@ -21,6 +21,7 @@
     "test:single": "NODE_OPTIONS=--experimental-vm-modules yarn run jest --config jest.config.js --testTimeout 100000",
     "eval:single": "NODE_OPTIONS=--experimental-vm-modules yarn run vitest --config ls.vitest.config.ts --run",
     "get-trace-urls": "tsx scripts/get-trace-urls.ts",
+    "test:lmstudio": "tsx test-lmstudio.ts",
     "postinstall": "turbo build"
   },
   "dependencies": {

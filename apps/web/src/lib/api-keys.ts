@@ -8,8 +8,16 @@ export function hasApiKeySet(config: Record<string, any>) {
 
   const apiKeys = config.apiKeys || {};
 
+  const providersRequiringKeys = enabledProviders.filter(
+    (provider) => provider !== "lmstudio",
+  );
+
   // No providers enabled means user is using default model: anthropic
-  if (enabledProviders.length === 0 && !apiKeys.anthropicApiKey) {
+  if (providersRequiringKeys.length === 0 && enabledProviders.includes("lmstudio")) {
+    return true;
+  }
+
+  if (providersRequiringKeys.length === 0 && !apiKeys.anthropicApiKey) {
     return false;
   }
 
