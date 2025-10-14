@@ -40,13 +40,18 @@ export async function GET(request: NextRequest) {
 
     const clientId = process.env.NEXT_PUBLIC_GITHUB_APP_CLIENT_ID;
     const clientSecret = process.env.GITHUB_APP_CLIENT_SECRET;
-    const redirectUri = process.env.GITHUB_APP_REDIRECT_URI;
 
-    if (!clientId || !clientSecret || !redirectUri) {
+    if (!clientId || !clientSecret) {
       return NextResponse.redirect(
         new URL("/?error=configuration_missing", request.url),
       );
     }
+
+    // Construct redirect URI dynamically (must match the one used in login)
+    const protocol = request.headers.get("x-forwarded-proto") || 
+                     (process.env.NODE_ENV === "production" ? "https" : "http");
+    const host = request.headers.get("host") || "localhost:3001";
+    const redirectUri = `${protocol}://${host}/api/auth/github/callback`;
 
     // Exchange authorization code for access token
     const tokenResponse = await fetch(

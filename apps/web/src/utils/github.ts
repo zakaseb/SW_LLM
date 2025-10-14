@@ -1,9 +1,19 @@
 function getBaseApiUrl(): string {
-  let baseApiUrl = new URL(
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api",
-  ).href;
-  baseApiUrl = baseApiUrl.endsWith("/") ? baseApiUrl : `${baseApiUrl}/`;
-  return baseApiUrl;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  
+  // If it's a relative path, construct absolute URL from current origin
+  if (apiUrl.startsWith("/")) {
+    if (typeof window !== "undefined") {
+      const baseUrl = window.location.origin + apiUrl;
+      return baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+    }
+    // Server-side: return relative path as-is
+    return apiUrl.endsWith("/") ? apiUrl : `${apiUrl}/`;
+  }
+  
+  // Absolute URL: use URL constructor to normalize
+  const baseApiUrl = new URL(apiUrl).href;
+  return baseApiUrl.endsWith("/") ? baseApiUrl : `${baseApiUrl}/`;
 }
 
 /**

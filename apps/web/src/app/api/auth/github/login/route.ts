@@ -1,17 +1,23 @@
 import { GITHUB_AUTH_STATE_COOKIE } from "@open-swe/shared/constants";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const clientId = process.env.NEXT_PUBLIC_GITHUB_APP_CLIENT_ID;
-    const redirectUri = process.env.GITHUB_APP_REDIRECT_URI;
-
-    if (!clientId || !redirectUri) {
+    
+    if (!clientId) {
       return NextResponse.json(
         { error: "GitHub App configuration missing" },
         { status: 500 },
       );
     }
+
+    // Construct redirect URI dynamically based on request host
+    // This ensures it works from localhost, network IPs, and production domains
+    const protocol = request.headers.get("x-forwarded-proto") || 
+                     (process.env.NODE_ENV === "production" ? "https" : "http");
+    const host = request.headers.get("host") || "localhost:3001";
+    const redirectUri = `${protocol}://${host}/api/auth/github/callback`;
 
     // Generate a random state parameter for security
     const state = crypto.randomUUID();
