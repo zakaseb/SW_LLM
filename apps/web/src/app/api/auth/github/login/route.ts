@@ -19,6 +19,11 @@ export async function GET(request: NextRequest) {
     const host = request.headers.get("host") || "localhost:3001";
     const redirectUri = `${protocol}://${host}/api/auth/github/callback`;
 
+    // Log the redirect URI for debugging
+    console.log("[GitHub OAuth] Login initiated with redirect URI:", redirectUri);
+    console.log("[GitHub OAuth] IMPORTANT: This URL must be whitelisted in your GitHub App settings");
+    console.log("[GitHub OAuth] Go to: https://github.com/settings/apps → Your App → Callback URL");
+
     // Generate a random state parameter for security
     const state = crypto.randomUUID();
 

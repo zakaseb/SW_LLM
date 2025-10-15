@@ -53,6 +53,8 @@ export async function GET(request: NextRequest) {
     const host = request.headers.get("host") || "localhost:3001";
     const redirectUri = `${protocol}://${host}/api/auth/github/callback`;
 
+    console.log("[GitHub OAuth] Callback received with redirect URI:", redirectUri);
+
     // Exchange authorization code for access token
     const tokenResponse = await fetch(
       "https://github.com/login/oauth/access_token",
