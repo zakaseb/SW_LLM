@@ -4,24 +4,18 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   try {
     const clientId = process.env.NEXT_PUBLIC_GITHUB_APP_CLIENT_ID;
+    const redirectUri = process.env.GITHUB_APP_REDIRECT_URI;
     
-    if (!clientId) {
+    if (!clientId || !redirectUri) {
       return NextResponse.json(
         { error: "GitHub App configuration missing" },
         { status: 500 },
       );
     }
 
-    // Construct redirect URI dynamically based on request host
-    // This ensures it works from localhost, network IPs, and production domains
-    const protocol = request.headers.get("x-forwarded-proto") || 
-                     (process.env.NODE_ENV === "production" ? "https" : "http");
-    const host = request.headers.get("host") || "localhost:3001";
-    const redirectUri = `${protocol}://${host}/api/auth/github/callback`;
-
     // Log the redirect URI for debugging
     console.log("[GitHub OAuth] Login initiated with redirect URI:", redirectUri);
-    console.log("[GitHub OAuth] IMPORTANT: This URL must be whitelisted in your GitHub App settings");
+    console.log("[GitHub OAuth] Make sure this EXACT URL is set in your GitHub App settings");
     console.log("[GitHub OAuth] Go to: https://github.com/settings/apps → Your App → Callback URL");
 
     // Generate a random state parameter for security
