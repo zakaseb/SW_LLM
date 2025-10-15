@@ -136,7 +136,13 @@ export async function fetchThreadStatus(
   sessionCache?: SessionCache,
 ): Promise<ThreadStatusData> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+    // Note: This function can run on server-side during SSR
+    // For client-side, we'll use window.location.origin
+    // For server-side, we'll use a default localhost URL
+    const apiUrl = typeof window !== "undefined" 
+      ? (window.location.origin + (process.env.NEXT_PUBLIC_API_URL || "/api"))
+      : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api");
+    
     if (!apiUrl) {
       throw new Error("API URL not configured");
     }

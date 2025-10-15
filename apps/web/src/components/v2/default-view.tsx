@@ -23,6 +23,7 @@ import { DraftsSection } from "./drafts-section";
 import { MANAGER_GRAPH_ID } from "@open-swe/shared/constants";
 import { TooltipIconButton } from "../ui/tooltip-icon-button";
 import { UserPopover } from "../user-popover";
+import { getApiUrl } from "@/lib/api-url";
 
 import { useThreadsStatus } from "@/hooks/useThreadsStatus";
 import { Thread } from "@langchain/langgraph-sdk";
@@ -83,7 +84,7 @@ interface DefaultViewProps {
 export function DefaultView({ threads, threadsLoading }: DefaultViewProps) {
   const router = useRouter();
   const [quickActionPrompt, setQuickActionPrompt] = useState("");
-  const apiUrl: string | undefined = process.env.NEXT_PUBLIC_API_URL ?? "";
+  const apiUrl = getApiUrl();
   const [draftToLoad, setDraftToLoad] = useState("");
   const assistantId: string | undefined = MANAGER_GRAPH_ID;
   const {

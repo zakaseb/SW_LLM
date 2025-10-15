@@ -8,6 +8,7 @@ import { useQueryState } from "nuqs";
 import { constructOpenInStudioURL } from "../utils";
 import { HumanInterrupt } from "@langchain/langgraph/prebuilt";
 import { useStream } from "@langchain/langgraph-sdk/react";
+import { getApiUrl } from "@/lib/api-url";
 
 interface ThreadActionsViewProps {
   interrupt: HumanInterrupt;
@@ -85,7 +86,7 @@ export function ThreadActionsView({
     interrupt,
     stream,
   });
-  const apiUrl: string | undefined = process.env.NEXT_PUBLIC_API_URL ?? "";
+  const apiUrl = getApiUrl();
 
   const handleOpenInStudio = () => {
     if (!apiUrl) {

@@ -12,6 +12,7 @@ import {
 } from "react";
 import { createClient } from "./client";
 import { GraphState } from "@open-swe/shared/open-swe/types";
+import { getApiUrl } from "@/lib/api-url";
 
 interface ThreadContextType {
   threads: Thread<GraphState>[];
@@ -41,7 +42,7 @@ function getThreadSearchMetadata(
 }
 
 export function ThreadProvider({ children }: { children: ReactNode }) {
-  const apiUrl: string | undefined = process.env.NEXT_PUBLIC_API_URL ?? "";
+  const apiUrl = getApiUrl();
   const assistantId: string | undefined =
     process.env.NEXT_PUBLIC_ASSISTANT_ID ?? "";
 

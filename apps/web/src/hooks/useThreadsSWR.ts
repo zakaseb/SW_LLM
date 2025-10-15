@@ -8,6 +8,7 @@ import { ReviewerGraphState } from "@open-swe/shared/open-swe/reviewer/types";
 import { GraphState } from "@open-swe/shared/open-swe/types";
 import { useMemo, useState } from "react";
 import type { Installation } from "./useGitHubInstallations";
+import { getApiUrl } from "@/lib/api-url";
 
 type ThreadSortBy = "thread_id" | "status" | "created_at" | "updated_at";
 type SortOrder = "asc" | "desc";
@@ -85,7 +86,7 @@ export function useThreadsSWR<
     ...pagination,
   };
 
-  const apiUrl: string | undefined = process.env.NEXT_PUBLIC_API_URL ?? "";
+  const apiUrl = getApiUrl();
 
   // Create a unique key for SWR caching based on assistantId and pagination parameters
   const swrKey = useMemo(() => {
