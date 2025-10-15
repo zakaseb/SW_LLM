@@ -7,6 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { RepositoryBranchSelectors } from "../github/repo-branch-selectors";
 import { Button } from "../ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import { useRouter } from "next/navigation";
 import { useGitHubAppProvider } from "@/providers/GitHubApp";
@@ -87,6 +93,10 @@ export function TerminalInput({
   });
 
   const handleSend = async () => {
+    console.log("[Submit] Starting submission...");
+    console.log("[Submit] Selected repository:", selectedRepository);
+    console.log("[Submit] User:", user);
+    
     if (!selectedRepository) {
       toast.error("Please select a repository first", {
         richColors: true,
@@ -104,8 +114,12 @@ export function TerminalInput({
     }
 
     const defaultConfig = getConfig(DEFAULT_CONFIG_KEY);
+    console.log("[Submit] Default config:", defaultConfig);
+    console.log("[Submit] Is allowed user:", isAllowedUser(user.login));
+    console.log("[Submit] Has API key set:", hasApiKeySet(defaultConfig));
 
     if (!isAllowedUser(user.login) && !hasApiKeySet(defaultConfig)) {
+      console.log("[Submit] Blocked: No API keys configured");
       toast.error(
         MISSING_API_KEYS_TOAST_CONTENT,
         MISSING_API_KEYS_TOAST_OPTIONS,
@@ -198,6 +212,9 @@ export function TerminalInput({
         setContentBlocks([]);
         setAutoAcceptPlan(false);
       } catch (e) {
+        console.error("[Submit Error]", e);
+        
+        // Check for API key errors
         if (
           typeof e === "object" &&
           e !== null &&
@@ -210,6 +227,20 @@ export function TerminalInput({
             MISSING_API_KEYS_TOAST_CONTENT,
             MISSING_API_KEYS_TOAST_OPTIONS,
           );
+        } else {
+          // Show generic error for other failures
+          const errorMessage = 
+            e instanceof Error 
+              ? e.message 
+              : typeof e === "string" 
+                ? e 
+                : "An unexpected error occurred";
+          
+          toast.error(`Failed to start task: ${errorMessage}`, {
+            richColors: true,
+            closeButton: true,
+            duration: 10_000,
+          });
         }
       } finally {
         setLoading(false);
@@ -254,21 +285,38 @@ export function TerminalInput({
         {/* Prompt */}
         <span className="text-muted-foreground">$</span>
 
-        <Button
-          onClick={handleSend}
-          disabled={
-            disabled || !message.trim() || !selectedRepository || isUserLoading
-          }
-          size="icon"
-          variant="brand"
-          className="ml-auto size-8 rounded-full border border-white/20 transition-all duration-200 hover:border-white/30 disabled:border-transparent"
-        >
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <ArrowUp className="size-4" />
-          )}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={handleSend}
+                disabled={
+                  disabled || !message.trim() || !selectedRepository || isUserLoading
+                }
+                size="icon"
+                variant="brand"
+                className="ml-auto size-8 rounded-full border border-white/20 transition-all duration-200 hover:border-white/30 disabled:border-transparent"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowUp className="size-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            {(!message.trim() || !selectedRepository || isUserLoading) && (
+              <TooltipContent>
+                {!selectedRepository
+                  ? "Select a repository first"
+                  : isUserLoading
+                    ? "Loading user..."
+                    : !message.trim()
+                      ? "Type a message to submit"
+                      : ""}
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Multiline Input */}
