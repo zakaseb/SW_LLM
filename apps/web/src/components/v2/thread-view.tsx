@@ -48,6 +48,7 @@ import { StickToBottom } from "use-stick-to-bottom";
 import { TokenUsage } from "./token-usage";
 import { HumanMessage as HumanMessageSDK } from "@langchain/langgraph-sdk";
 import { getMessageContentString } from "@open-swe/shared/messages";
+import { getApiUrl } from "@/lib/api-url";
 import { useUser } from "@/hooks/useUser";
 
 interface ThreadViewProps {
@@ -95,6 +96,7 @@ export function ThreadView({
   onBackToHome,
 }: ThreadViewProps) {
   const { user } = useUser();
+  const apiUrl = getApiUrl();
   const [chatInput, setChatInput] = useState("");
   const [selectedTab, setSelectedTab] = useState<"planner" | "programmer">(
     "planner",
@@ -177,7 +179,7 @@ export function ThreadView({
   >([]);
 
   const plannerStream = useStream<PlannerGraphState>({
-    apiUrl: process.env.NEXT_PUBLIC_API_URL,
+    apiUrl,
     assistantId: PLANNER_GRAPH_ID,
     reconnectOnMount: true,
     threadId: plannerSession?.threadId,
@@ -203,7 +205,7 @@ export function ThreadView({
   }, [plannerSession]);
 
   const programmerStream = useStream<GraphState>({
-    apiUrl: process.env.NEXT_PUBLIC_API_URL,
+    apiUrl,
     assistantId: PROGRAMMER_GRAPH_ID,
     reconnectOnMount: true,
     threadId: programmerSession?.threadId,

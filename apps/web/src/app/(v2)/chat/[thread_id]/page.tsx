@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { use, useEffect, useRef, useState } from "react";
 import { Client, Thread } from "@langchain/langgraph-sdk";
+import { getApiUrl } from "@/lib/api-url";
 
 async function fetchInitialThread(
   client: Client<ManagerGraphState>,
@@ -46,8 +47,9 @@ export default function ThreadPage({
     useState<Thread<ManagerGraphState> | null>(null);
   const router = useRouter();
   const { thread_id } = use(params);
+  const apiUrl = getApiUrl();
   const stream = useStream<ManagerGraphState>({
-    apiUrl: process.env.NEXT_PUBLIC_API_URL ?? "",
+    apiUrl,
     assistantId: MANAGER_GRAPH_ID,
     threadId: thread_id,
     reconnectOnMount: true,
