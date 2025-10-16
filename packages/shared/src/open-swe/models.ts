@@ -85,8 +85,12 @@ export const MODEL_OPTIONS = [
     value: "google-genai:gemini-2.5-flash",
   },
   {
-    label: "LM Studio Local",
+    label: "LM Studio Local (Generic)",
     value: "lmstudio:lmstudio-local",
+  },
+  {
+    label: "LM Studio - openai/gpt-oss-20b",
+    value: "lmstudio:openai/gpt-oss-20b",
   },
 ];
 
