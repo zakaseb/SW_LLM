@@ -6,7 +6,7 @@ import {
   messagesStateReducer,
   MessagesZodState,
 } from "@langchain/langgraph/web";
-import { MODEL_OPTIONS, MODEL_OPTIONS_NO_THINKING } from "./models.js";
+import { MODEL_OPTIONS_NO_THINKING } from "./models.js";
 import { ConfigurableFieldUIMetadata } from "../configurable-metadata.js";
 import {
   uiMessageReducer,
@@ -399,7 +399,7 @@ export const GraphConfigurationMetadata: {
       default: "anthropic:claude-3-5-haiku-latest",
       description:
         "The model to use for routing tasks, and other simple generations. This model should be good at tool calling/structured output.",
-      options: MODEL_OPTIONS,
+      options: MODEL_OPTIONS_NO_THINKING,
     },
   },
   routerTemperature: {
