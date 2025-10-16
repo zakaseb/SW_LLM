@@ -152,6 +152,23 @@ export class FallbackRunnable<
             delete kwargs.parallel_tool_calls;
           }
 
+          // LM Studio only supports string values for tool_choice: "none", "auto", "required"
+          // If tool_choice is set to a specific tool name, convert it to "required"
+          if (modelConfig.provider === "lmstudio" && kwargs.tool_choice) {
+            if (typeof kwargs.tool_choice === "string" && 
+                !["none", "auto", "required"].includes(kwargs.tool_choice)) {
+              logger.debug(
+                `Converting tool_choice from "${kwargs.tool_choice}" to "required" for LM Studio`,
+              );
+              kwargs.tool_choice = "required";
+            } else if (typeof kwargs.tool_choice === "object") {
+              logger.debug(
+                `Converting tool_choice object to "required" for LM Studio`,
+              );
+              kwargs.tool_choice = "required";
+            }
+          }
+
           runnableToUse = (runnableToUse as ConfigurableModel).bindTools(
             toolsToUse.tools,
             kwargs,
