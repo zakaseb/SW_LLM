@@ -26,6 +26,12 @@ OPEN_SWE_LOCAL_MODE=true
 
 # LM Studio API URL
 LMSTUDIO_BASE_URL=http://localhost:1234/v1
+
+# GitHub App Configuration (required even in local mode for backend to start)
+# These are dummy values since webhooks are not used in local mode
+GITHUB_APP_ID=123456
+GITHUB_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z2Z... (dummy key)\n-----END RSA PRIVATE KEY-----"
+GITHUB_WEBHOOK_SECRET=dummy_webhook_secret_for_local_mode
 EOF
 
 echo -e "${GREEN}✓ Created $ENV_FILE${NC}"
@@ -46,6 +52,12 @@ sleep 2
 # Start backend
 echo "Starting backend with local mode enabled..."
 cd /home/precision7780/PycharmProjects/open-swe/apps/open-swe
+
+# Load environment variables from .env file
+set -a
+source .env
+set +a
+
 yarn dev > /tmp/openswe-backend-local.log 2>&1 &
 BACKEND_PID=$!
 
