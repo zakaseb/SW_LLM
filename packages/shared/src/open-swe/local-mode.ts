@@ -8,7 +8,9 @@ export function isLocalMode(config?: GraphConfig): boolean {
   if (!config) {
     return isLocalModeFromEnv();
   }
-  return (config.configurable as any)?.["x-local-mode"] === "true";
+  // Check config first, then fallback to environment variable
+  const configLocalMode = (config.configurable as any)?.["x-local-mode"] === "true";
+  return configLocalMode || isLocalModeFromEnv();
 }
 
 /**
