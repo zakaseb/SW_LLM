@@ -49,14 +49,21 @@ export function createTextEditorTool(
 
           // Convert sandbox path to local path
           let localPath = path;
-          if (path.startsWith("/home/daytona/project/")) {
-            // Remove the sandbox prefix to get the relative path
-            localPath = path.replace("/home/daytona/project/", "");
-          } else if (path.startsWith("/home/daytona/local/")) {
-            // Remove the local sandbox prefix to get the relative path
-            localPath = path.replace("/home/daytona/local/", "");
+          
+          // If path starts with workDir, use it as-is (already absolute and correct)
+          if (path.startsWith(workDir)) {
+            localPath = path;
           }
-          const filePath = join(workDir, localPath);
+          // If path is a Daytona sandbox path, convert to local
+          else if (path.startsWith("/home/daytona/")) {
+            // Remove Daytona prefix (e.g., /home/daytona/project/, /home/daytona/RepoName/)
+            const daytonaPattern = /^\/home\/daytona\/[^\/]+\//;
+            localPath = path.replace(daytonaPattern, "");
+          }
+          
+          const filePath = path.startsWith("/") && path.startsWith(workDir) 
+            ? localPath 
+            : join(workDir, localPath);
 
           switch (command) {
             case "view": {

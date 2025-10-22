@@ -38,11 +38,23 @@ export function createViewTool(
 
           // Convert sandbox path to local path
           let localPath = path;
-          if (path.startsWith("/home/daytona/project/")) {
-            // Remove the sandbox prefix to get the relative path
-            localPath = path.replace("/home/daytona/project/", "");
+          
+          // If path starts with workDir, use it as-is (already absolute and correct)
+          if (path.startsWith(workDir)) {
+            localPath = path;
           }
-          const filePath = join(workDir, localPath);
+          // If path is a Daytona sandbox path, convert to local
+          else if (path.startsWith("/home/daytona/")) {
+            // Remove Daytona prefix (e.g., /home/daytona/project/, /home/daytona/RepoName/)
+            const daytonaPattern = /^\/home\/daytona\/[^\/]+\//;
+            localPath = path.replace(daytonaPattern, "");
+          }
+          // If path is absolute but not under workDir, use it as-is
+          // Otherwise treat as relative and join with workDir
+          
+          const filePath = path.startsWith("/") && path.startsWith(workDir) 
+            ? localPath 
+            : join(workDir, localPath);
 
           // Use cat command to view file content
           const response = await executor.executeCommand({
