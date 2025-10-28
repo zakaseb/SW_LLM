@@ -70,6 +70,43 @@ export async function startPlanner(
       ...(followupMessage || localMode ? { messages: [followupMessage] } : {}),
     };
 
+    // Pre-create the thread to ensure it exists in storage before creating the run
+    // This prevents race conditions where the frontend tries to fetch the thread before it's persisted
+    if (!state.plannerSession?.threadId) {
+      logger.info("Creating new planner thread in storage", {
+        threadId: plannerThreadId,
+      });
+      try {
+        await langGraphClient.threads.create({
+          threadId: plannerThreadId,
+          metadata: {
+            graph_id: PLANNER_GRAPH_ID,
+            created_by: "manager",
+            repository: `${state.targetRepository?.owner}/${state.targetRepository?.repo}`,
+          },
+        });
+        logger.info("Successfully created planner thread in storage", {
+          threadId: plannerThreadId,
+        });
+      } catch (threadCreateError) {
+        // If thread already exists, that's okay - log and continue
+        if (
+          threadCreateError instanceof Error &&
+          threadCreateError.message.includes("already exists")
+        ) {
+          logger.info("Planner thread already exists, continuing", {
+            threadId: plannerThreadId,
+          });
+        } else {
+          // For other errors, log but still attempt to create the run
+          logger.warn("Failed to pre-create planner thread, attempting run creation anyway", {
+            threadId: plannerThreadId,
+            error: threadCreateError instanceof Error ? threadCreateError.message : String(threadCreateError),
+          });
+        }
+      }
+    }
+
     const run = await langGraphClient.runs.create(
       plannerThreadId,
       PLANNER_GRAPH_ID,
