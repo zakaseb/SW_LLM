@@ -123,6 +123,7 @@ ${ISSUE_CONTENT_CLOSE_TAG}`,
   });
 
   return {
+    threadId: newManagerThreadId,
     messages: [
       new AIMessage({
         id: uuidv4(),
